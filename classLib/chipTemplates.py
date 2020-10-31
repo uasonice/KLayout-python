@@ -149,10 +149,10 @@ class CHIP_10x10_12pads:
         from collections import OrderedDict
         geometry_params = OrderedDict(
             [
-                ("dx, um", CHIP.dx / 1e3),
-                ("dy, um", CHIP.dy / 1e3),
-                ("nX", CHIP.nX),
-                ("nY", CHIP.nY)
+                ("dx, um", CHIP_10x10_12pads.dx / 1e3),
+                ("dy, um", CHIP_10x10_12pads.dy / 1e3),
+                ("nX", CHIP_10x10_12pads.nX),
+                ("nY", CHIP_10x10_12pads.nY)
             ]
         )
         modified_dict = OrderedDict()

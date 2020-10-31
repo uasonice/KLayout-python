@@ -1,7 +1,11 @@
 import pya
-from pya import Region, DPoint
+from pya import Region, DPoint, Cell
+
+from classLib._PROG_SETTINGS import PROGRAM
 
 from collections import OrderedDict
+
+from typing import Union
 
 
 class ChipDesign:
@@ -122,6 +126,44 @@ class ChipDesign:
             return self.region_ph
         else:
             return None
+
+    def inverse_destination(self, dest: Union[Region, Cell], layer_i: int = -1):
+        """
+            Inverses empty regions and solid polygons
+        on the given destination `dest` and `layer`.
+            If layer is not specified, destination `dest`
+        is interpreted as `pya.Region` instance.
+            Otherwise, `dest` is interpreted as `pya.Cell` instance
+
+        Parameters
+        ----------
+        dest : Union[Region, Cell]
+            destination, interpreted either as Region or Cell instances depending
+            on whether layer was provided
+        layer_i : Optional[int]
+            positive layer index.
+        Returns
+        -------
+        None
+        """
+        tmp_reg = Region()
+        tmp_reg.insert(self.chip_box)
+
+        if layer_i == -1:
+            dest_reg = dest
+            dest_reg ^= tmp_reg
+        else:
+            r_cell = Region(dest.begin_shapes_rec(layer_i))
+            r_cell ^= tmp_reg
+            temp_layer_i = dest.layout().layer(pya.LayerInfo(PROGRAM.LAYER1_NUM, 0))
+
+            # Moving layers.
+            # Due to internal representation, region polygons are actually
+            # point to polygons in a cell. So we can
+            dest.shapes(temp_layer_i).insert(r_cell)
+            dest.layout().clear_layer(layer_i)
+            dest.layout().move_layer(temp_layer_i, layer_i)
+            dest.layout().delete_layer(temp_layer_i)
 
     # Save your design as GDS-II
     def save_as_gds2(self, filename):

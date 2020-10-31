@@ -19,7 +19,7 @@ class EMResonator_TL2Qbit_worm2(ComplexBase):
         # Usually located near readout waveguide, hence the name origin
         self.L_coupling = L_coupling
         self.L1 = L1  # horizontal coplanars length
-        self.r = r  # curvature radius of all arc coplanars
+        self.r = r  # curvature outer_r of all arc coplanars
         self.L2 = L2  # tail length
 
         self.N = N  # number of Coil_type_1 structure utilized

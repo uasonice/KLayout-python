@@ -12,7 +12,7 @@ import classLib
 
 reload(classLib)
 from classLib.baseClasses import ElementBase
-from classLib.coplanars import CPWParameters, CPW, CPW_arc
+from classLib.coplanars import CPWParameters, CPW, CPW_arc, CPW_RL_Path
 from classLib.contactPads import ContactPad
 
 
@@ -189,13 +189,14 @@ class Bridge1(ElementBase):
     @staticmethod
     def bridgify_CPW(cpw, bridges_step, cell=None, bridge_layer1=-1, bridge_layer2=-1):
         """
-        Function puts bridge patterns to fabricate bridges on coplanar waveguide
-        `cpw` with bridges having period of `bridges_step` and distributed over
-        coplanar, starting with its center.
+            Function puts bridge patterns to fabricate bridges on coplanar waveguide
+        `cpw` with bridges having period of `bridges_step` along coplanar's wave
+        propagation direction.
+            Bridges are distributed over coplanar starting with its center.
 
         Parameters
         ----------
-        cpw : Union[CPW, CPW_arc]
+        cpw : Union[CPW, CPW_arc, CPW_RL_Path]
             instance of coplanar class to be bridged during fabrication
         bridges_step : float
             distance between centers of bridges in nm
@@ -236,13 +237,22 @@ class Bridge1(ElementBase):
                         trans_in=DCplxTrans(1, alpha/pi*180, False, 0, 0)
                     )
                 )
-
             for bridge in bridges:
                 bridge.place(dest=cell, layer_i=bridge_layer1, region_name="bridges_1")
                 bridge.place(dest=cell, layer_i=bridge_layer2, region_name="bridges_2")
         elif isinstance(cpw, CPW_arc):
             # to be implemented
             pass
+        elif isinstance(cpw, CPW_RL_Path):
+            for primitive in cpw.primitives.values():
+                if isinstance(primitive, CPW):
+                    Bridge1.bridgify_CPW(
+                        primitive, bridges_step,
+                        cell, bridge_layer1, bridge_layer2
+                    )
+        else:
+            # do nothing for other shapes
+            return
 
 
 if __name__ == "__main__":
@@ -295,10 +305,16 @@ if __name__ == "__main__":
     gap = 10e3
     cpw = CPW(width, gap, p1, p2)
     cpw.place(cell, layer_photo)
-    print(cpw.dr)
     bridges_step = 50e3
     Bridge1.bridgify_CPW(
         cpw, bridges_step,
+        cell=cell, bridge_layer1=layer_photo1_bridges, bridge_layer2=layer_photo2_bridges
+    )
+    z2 = CPWParameters(width, gap)
+    cpw2 = CPW_RL_Path(DPoint(400e3, 400e3), "LRLRL", z2, 60e3, 100e3, [pi/4, pi/3])
+    cpw2.place(cell, layer_photo)
+    Bridge1.bridgify_CPW(
+        cpw2, bridges_step,
         cell=cell, bridge_layer1=layer_photo1_bridges, bridge_layer2=layer_photo2_bridges
     )
 

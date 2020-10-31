@@ -194,23 +194,46 @@ class XmonCross(ComplexBase):
 
 
 class Circle(ElementBase):
-    def __init__(self, center, r, trans_in=None, n_pts=50, solid=True, offset_angle=0):
+    def __init__(self, center, r, trans_in=None, n_pts=50, inverse=False, offset_angle=0):
+        """
+
+        Parameters
+        ----------
+        center : DPoint
+            center of the circle
+        r : float
+            circle radius
+        trans_in : DcplxTrans
+            initial transformation, None by default
+        n_pts : int
+            number of points comprising the circumference of the ring (50 by default)
+        inverse : bool
+            if True then the ring is subtracted from a layer (False by default)
+        offset_angle : float
+            Angle in radians where the first point of the circle will be placed.
+            Makes sense for small `n_pts` values.
+        """
         self.center = center
         self._offset_angle = offset_angle
         self.r = r
         self.n_pts = n_pts
-        self.solid = solid
-        super().__init__(center, trans_in)
+        super().__init__(center, trans_in, inverse=inverse)
 
     def init_regions(self):
+        origin = DPoint(0, 0)
         dpts_arr = [DPoint(self.r * cos(2 * pi * i / self.n_pts + self._offset_angle),
                            self.r * sin(2 * pi * i / self.n_pts + self._offset_angle)) for i in range(0, self.n_pts)]
-        if (self.solid == True):
-            self.metal_region.insert(SimplePolygon().from_dpoly(DSimplePolygon(dpts_arr)))
+        circle_polygon = SimplePolygon().from_dpoly(DSimplePolygon(dpts_arr))
+        if self.inverse:
+            self.empty_region.insert(circle_polygon)
         else:
-            self.empty_region.insert(SimplePolygon().from_dpoly(DSimplePolygon(dpts_arr)))
-        self.connections.extend([self.center, self.center + DVector(0, -self.r)])
+            self.metal_region.insert(circle_polygon)
+
+        self.connections.extend([origin, origin + DVector(0, -self.r)])
         self.angle_connections.extend([0, 0])
+
+    def _refresh_named_connections(self):
+        self.center = self.connections[0]
 
 
 class Kolbaska(ElementBase):
@@ -255,37 +278,44 @@ class Circle_arc(ElementBase):
 
 
 class Ring(ElementBase):
-    """@brief: class represents a ring (radius - thicknes < R < radius)
-        @params:  DPoint origin - the center of the ring
-                        float radius - outer radius of the ring
-                        float thickness - thickness of the ring
-                        int n_pts - number of points comprising the circumference of the ring (50 by default)
-                        Trans trans_in - initial transformation (None by default)
-                        bool inverse - if True then the ring is subtracted from a layer (False by default)
-    """
+    def __init__(self, origin, outer_r, thickness, n_pts=50, trans_in=None, inverse=False):
+        """
 
-    def __init__(self, origin, radius, thickness, n_pts=50, trans_in=None, inverse=False):
-        self.r = radius
+        Parameters
+        ----------
+        origin : DPoint
+            the center of the ring
+        outer_r : float
+            outer radius of the ring
+        thickness : float
+            thickness of the ring
+        n_pts : int
+            number of points comprising the circumference of the ring (50 by default)
+        trans_in : DCplxTrans
+            initial transformation (None by default)
+        inverse : bool
+            if True then the ring is subtracted from a layer (False by default)
+        """
+        self.r = outer_r
         self.t = thickness
         self.n_pts = n_pts
         super().__init__(origin, trans_in, inverse)
 
     def init_regions(self):
-        origin = DPoint(0, 0)
-        Rin = self.r - self.t
         Rout = self.r
+        Rin = self.r - self.t
         dpts_arr_Rout = [DPoint(Rout * cos(2 * pi * i / self.n_pts), Rout * sin(2 * pi * i / self.n_pts)) for i in
                          range(0, self.n_pts)]
         dpts_arr_Rin = [DPoint(Rin * cos(2 * pi * i / self.n_pts), Rin * sin(2 * pi * i / self.n_pts)) for i in
                         range(0, self.n_pts)]
-        outer_circle = Region(SimplePolygon().from_dpoly(DSimplePolygon(dpts_arr_Rout)))
-        inner_circle = Region(SimplePolygon().from_dpoly(DSimplePolygon(dpts_arr_Rin)))
-        ring = outer_circle - inner_circle
-        # self.metal_region.insert(ring)
+        ring_dpoly = DPolygon(dpts_arr_Rout)
+        ring_dpoly.insert_hole(dpts_arr_Rin)
+        ring_poly = Polygon().from_dpoly(ring_dpoly)
+
         if self.inverse:
-            self.empty_region = ring
+            self.empty_region.insert(ring_poly)
         else:
-            self.metal_region = ring
+            self.metal_region.insert(ring_poly)
 
 
 class IsoTrapezoid(ElementBase):

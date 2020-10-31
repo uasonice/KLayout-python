@@ -330,10 +330,10 @@ class My_Design(SimulatedDesign):
 
     def get_dc_squid_params(self):
         pad_side = 5e3  # A length of the side of triangle pad
-        pad_r = 1e3  # The radius of round angle of the contact pad
+        pad_r = 1e3  # The outer_r of round angle of the contact pad
         pads_distance = 30e3  # The distance between triangle contact pads
         p_ext_width = 3e3  # The width of curved rectangle leads which connect triangle contact pads and junctions
-        p_ext_r = 0.5e3  # The angle radius of the pad extension
+        p_ext_r = 0.5e3  # The angle outer_r of the pad extension
         sq_len = 7e3  # The length of the squid, along leads
         sq_area = 15e6  # The total area of the squid
         j_width = 0.3e3  # The width of the upper small leads (straight) and also a width of the junction

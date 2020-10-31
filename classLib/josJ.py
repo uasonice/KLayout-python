@@ -103,24 +103,32 @@ class AsymSquid(ComplexBase):
     def init_primitives(self):
         origin = DPoint(0, 0)
         pars = self.params
-        self._up_pad_center = origin + DVector(0, pars.pads_distance / 2)
-        self._down_pad_center = origin + DVector(0, -pars.pads_distance / 2)
-        self.primitives["pad_down"] = Circle(
-            self._down_pad_center, pars.pad_r,
+        up_pad_center = origin + DVector(0, pars.pads_distance / 2)
+        down_pad_center = origin + DVector(0, -pars.pads_distance / 2)
+        self.pad_down = Circle(
+            down_pad_center, pars.pad_r,
             n_pts=pars.n, offset_angle=pi / 2
         )
-        self.primitives["p_ext_down"] = Kolbaska(
-            self._down_pad_center, origin + DPoint(0, -pars.sq_len / 2),
+        self.primitives["pad_down"] = self.pad_down
+
+        self.p_ext_down = Kolbaska(
+            down_pad_center, origin + DPoint(0, -pars.sq_len / 2),
             pars.p_ext_width, pars.p_ext_r
         )
-        self.primitives["pad_up"] = Circle(
-            self._up_pad_center, pars.pad_r,
+        self.primitives["p_ext_down"] = self.p_ext_down
+
+        self.pad_up = Circle(
+            up_pad_center, pars.pad_r,
             n_pts=pars.n, offset_angle=-pi / 2
         )
-        self.primitives["p_ext_up"] = Kolbaska(
-            self._up_pad_center, origin + DVector(0, pars.sq_len / 2),
+        self.primitives["pad_up"] = self.pad_up
+
+        self.p_ext_up = Kolbaska(
+            up_pad_center, origin + DVector(0, pars.sq_len / 2),
             pars.p_ext_width, pars.p_ext_r
         )
+        self.primitives["p_ext_up"] = self.p_ext_up
+
         origin = DPoint(0, 0)
         if self.side == 0:
             self.init_half(origin, side=1)  # right
@@ -192,13 +200,13 @@ class Squid(AsymSquid):
         pad_side: float
             A length of the side of triangle pad.
         (??) pad_r: float
-            The radius of round angle of the contact pad.
+            The outer_r of round angle of the contact pad.
         pads_distance:
             The distance between triangle contact pads.
         p_ext_width: float
             The width of curved rectangle leads which connect triangle contact pads and junctions.
         p_ext_r: float
-            The angle radius of the pad extension
+            The angle outer_r of the pad extension
         sq_len: float
             The length of the squid, along leads.
         sq_width: float

@@ -44,8 +44,8 @@ class CWave(ComplexBase):
         Z = CPWParameters( 0, self.s/2 )
         
         # placing circle r_out with dr clearance from ground polygon
-        self.empt_circle = Circle( origin,self.r_out + self.dr, n_pts=self.n_pts, solid=False )
-        self.in_circle = Circle( origin, self.r_out, n_pts=self.n_pts, solid=True )
+        self.empt_circle = Circle(origin, self.r_out + self.dr, n_pts=self.n_pts, inverse=True)
+        self.in_circle = Circle(origin, self.r_out, n_pts=self.n_pts, inverse=False)
         self.empt_circle.empty_region -= self.in_circle.metal_region
         self.primitives["empt_circle"] = self.empt_circle
         self.primitives["in_circle"] = self.in_circle

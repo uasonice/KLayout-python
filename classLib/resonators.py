@@ -824,9 +824,12 @@ class EMResonatorTL3QbitWormRLTail(ComplexBase):
         # coils filling
         for i in range(self.N):
             name = "coil" + str(i + 1)
-            setattr(self, name,
-                    Coil_type_1(self.Z0, DPoint(-self.L1 + self.L_coupling, -(i + 1) * (4 * self.r)), self.L1, self.r,
-                                self.L1))
+            setattr(
+                self, name, Coil_type_1(
+                        self.Z0, DPoint(-self.L1 + self.L_coupling, -(i + 1) * (4 * self.r)),
+                        self.L1, self.r, self.L1
+                    )
+            )
             self.primitives[name] = getattr(self, name)
 
         self.connections = [DPoint(0, 0), self.cpw_end_open_RLPath.end]

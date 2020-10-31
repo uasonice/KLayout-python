@@ -88,11 +88,11 @@ if __name__ == "__main__":
     to_line_list = [53e3] * len(L1_list)
     fork_metal_width = 25e3
     fork_gnd_gap = 20e3
-    xmon_fork_gnd_gaps = [x*1e3 for x in [20, 22, 24, 26]]
+    xmon_dys_Cg_coupling = [1e3*x for x in [10, 12, 14, 16, 18]]
     # resonator-fork parameters
     # -20e3 for Xmons in upper sweet-spot
     # -10e3 for Xmons in lower sweet-spot
-    xmon_fork_penetration_list = [-20e3, -10e3, -20e3, -10e3, -20e3]
+    xmon_fork_penetration_list = [-25e3]
 
     # xmon cross parameters
     cross_len_x = 180e3
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     # https://drive.google.com/file/d/1wFmv5YmHAMTqYyeGfiqz79a9kL1MtZHu/view?usp=sharing
 
     # distance between nearest resonators central conductors centers
-    resonators_d = 400e3
+    resonators_d = 430e3
     # x span between left long vertical line and
     # right-most center of central conductors
     resonators_widths = [2 * r + L_coupling for L_coupling in L_coupling_list]
