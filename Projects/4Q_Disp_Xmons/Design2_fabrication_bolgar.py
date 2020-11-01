@@ -259,7 +259,7 @@ class Design5Q(ChipDesign):
 
         self.draw_photo_el_marks()
         self.draw_bridges()
-        # self.inverse_destination(self.region_ph)
+        self.inverse_destination(self.region_ph)
         self.cell.shapes(self.layer_ph).insert(self.region_ph)
         self.cell.shapes(self.layer_el).insert(self.region_el)
         self.cell.shapes(self.layer_el2).insert(self.region_el2)
@@ -763,7 +763,7 @@ class Design5Q(ChipDesign):
 
     def draw_bridges(self):
         self.region_bridges2.insert(self.chip_box)
-        bridges_step = 50e3
+        bridges_step = 150e3
 
         # for resonators
         for resonator in self.resonators:
