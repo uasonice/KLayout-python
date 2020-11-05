@@ -414,8 +414,9 @@ class Bridge1(ElementBase):
     transition_len = 12e3
     gnd2gnd_dy = 70e3
 
-    def __init__(self, center, trans_in=None):
+    def __init__(self, center, gnd_touch_dx=20e3, trans_in=None):
         self.center = center
+        self.gnd_touch_dx = gnd_touch_dx
         self.angle = 0
         super().__init__(center, trans_in)
 
@@ -457,7 +458,7 @@ class Bridge1(ElementBase):
                          self.transition_len - self.surround_gap)
         # top left corner + `surrounding_gap` + `transition_length`
         p3 = bot_gnd_touch_box.p1 + DPoint(0, bot_gnd_touch_box.height()) + \
-             DPoint(0, self.transition_len)
+             DPoint(-(20e3-self.gnd_touch_dx)/2, self.transition_len)
         bl_pts_list = [p1, p2, p3]  # bl stands for bottom-left
         ''' exploiting symmetry of reflection at x and y axes. '''
         # reflecting at x-axis

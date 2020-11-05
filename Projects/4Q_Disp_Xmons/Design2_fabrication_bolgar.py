@@ -4,7 +4,8 @@ import itertools
 
 import pya
 from pya import Cell
-from pya import Point, DPoint, DVector, DSimplePolygon, SimplePolygon, DPolygon, Polygon, Region
+from pya import Point, Vector,\
+    DPoint, DVector, DSimplePolygon, SimplePolygon, DPolygon, Polygon, Region
 from pya import Trans, DTrans, CplxTrans, DCplxTrans, ICplxTrans
 
 from importlib import reload
@@ -14,7 +15,7 @@ reload(classLib)
 
 from classLib.baseClasses import ElementBase, ComplexBase
 from classLib.coplanars import CPWParameters, CPW_RL_Path, CPW2CPW, Bridge1
-from classLib.shapes import XmonCross, Circle
+from classLib.shapes import XmonCross, Circle, Rectangle
 from classLib.resonators import EMResonatorTL3QbitWormRLTailXmonFork
 from classLib.josJ import AsymSquidParams, AsymSquid
 from classLib.chipTemplates import CHIP_10x10_12pads
@@ -122,7 +123,50 @@ class MDriveLineEnd(ComplexBase):
 class FABRICATION:
     # metal polygons are overetched on this value of nm
     # correponding adjustments have to be made to the design.
-    OVERETCHING = 1e3
+    OVERETCHING = 0.75e3
+
+
+class TestStructurePads(ComplexBase):
+    def __init__(self, center, trans_in=None):
+        self.center = center
+        self.rectangle_a = 200e3 + 2*FABRICATION.OVERETCHING
+        self.gnd_gap = 20e3 - 2 * FABRICATION.OVERETCHING
+        self.rectangles_gap = 20e3 - 2 * FABRICATION.OVERETCHING
+        super().__init__(center, trans_in)
+
+    def init_primitives(self):
+        center = DPoint(0, 0)
+
+        ## empty rectangle ##
+        empty_width = self.rectangle_a + 2*self.gnd_gap
+        empty_height = 2*self.rectangle_a + 2*self.gnd_gap + self.rectangles_gap
+        # bottom-left point of rectangle
+        bl_point = center - DPoint(empty_width/2, empty_height/2)
+        self.empty_rectangle = Rectangle(
+            bl_point,
+            empty_width, empty_height, inverse=True
+        )
+        self.primitives["empty_rectangle"] = self.empty_rectangle
+
+        ## top rectangle ##
+        # bottom-left point of rectangle
+        bl_point = center + DPoint(-self.rectangle_a/2, self.rectangles_gap/2)
+        self.top_rec = Rectangle(bl_point, self.rectangle_a, self.rectangle_a)
+        self.primitives["top_rec"] = self.top_rec
+
+        ## bottom rectangle ##
+        # bottom-left point of rectangle
+        bl_point = center + DPoint(
+            -self.rectangle_a/2,
+            - self.rectangles_gap/2 - self.rectangle_a
+        )
+        self.bot_rec = Rectangle(bl_point, self.rectangle_a, self.rectangle_a)
+        self.primitives["bot_rec"] = self.bot_rec
+
+        self.connections = [center]
+
+    def _refresh_named_connections(self):
+        self.center = self.connections[0]
 
 
 class Design5Q(ChipDesign):
@@ -250,16 +294,18 @@ class Design5Q(ChipDesign):
         '''
         self.create_resonator_objects()
         self.draw_readout_waveguide()
-
+        #
         self.draw_xmons_and_resonators()
         self.draw_md_and_flux_lines()
 
+        self.draw_test_structures()
+        #
         self.draw_josephson_loops()
         self.draw_el_dc_contacts()
-
+        #
         self.draw_photo_el_marks()
         self.draw_bridges()
-        self.inverse_destination(self.region_ph)
+        # self.inverse_destination(self.region_ph)
         self.cell.shapes(self.layer_ph).insert(self.region_ph)
         self.cell.shapes(self.layer_el).insert(self.region_el)
         self.cell.shapes(self.layer_el2).insert(self.region_el2)
@@ -267,6 +313,8 @@ class Design5Q(ChipDesign):
         self.cell.shapes(self.layer_bridges2).insert(self.region_bridges2)
 
     def draw_chip(self):
+        self.region_bridges2.insert(self.chip_box)
+
         self.region_ph.insert(self.chip_box)
         self.contact_pads = self.chip.get_contact_pads()
         for contact_pad in self.contact_pads:
@@ -737,8 +785,12 @@ class Design5Q(ChipDesign):
         self.squids.append(squid)
         squid.place(self.region_el)
 
-    def draw_el_dc_contacts(self):
-        for squid in self.squids:
+    def draw_el_dc_contacts(self, squids: AsymSquid=None):
+        # if argument is omitted, use all squids stored in `self.squids`
+        if squids is None:
+            squids = self.squids
+
+        for squid in squids:
             r_pad = squid.params.pad_r
             center_up = squid.pad_up.center + DPoint(0, r_pad)
             center_down = squid.pad_down.center + DPoint(0, -r_pad)
@@ -749,20 +801,80 @@ class Design5Q(ChipDesign):
             for contact in self.el_dc_contacts[-1]:
                 contact.place(self.region_el2)
 
+    def draw_test_structures(self):
+        new_pars_squid = AsymSquidParams(
+            pad_r=5e3, pads_distance=30e3,
+            p_ext_width=10e3, p_ext_r=200,
+            sq_len=15e3, sq_area=200e6,
+            j_width_1=94, j_width_2=347,
+            intermediate_width=500, b_ext=1e3, j_length=94, n=20,
+            bridge=180, j_length_2=250
+        )
+
+        struct_centers = [DPoint(1e6, 4e6), DPoint(8.7e6, 5.7e6), DPoint(6.5e6, 2.7e6)]
+        for struct_center in struct_centers:
+            ## JJ test structures ##
+            # test structure with big critical current
+            test_struct1 = TestStructurePads(struct_center)
+            test_struct1.place(self.region_ph)
+            text_reg = pya.TextGenerator.default_generator().text("26.17 nA", 0.001, 50, False, 0, 0)
+            text_bl = test_struct1.empty_rectangle.origin + DPoint(
+                test_struct1.gnd_gap, -4*test_struct1.gnd_gap
+            )
+            text_reg.transform(ICplxTrans(1.0, 0, False, text_bl.x, text_bl.y))
+            self.region_ph -= text_reg
+            test_jj = AsymSquid(test_struct1.center, new_pars_squid, side=1)
+            self.squids.append(test_jj)
+            test_jj.place(self.region_el)
+
+            # test structure with low critical current
+            test_struct2 = TestStructurePads(struct_center + DPoint(0.3e6, 0))
+            test_struct2.place(self.region_ph)
+            text_reg = pya.TextGenerator.default_generator().text("5.23 nA", 0.001, 50, False, 0, 0)
+            text_bl = test_struct2.empty_rectangle.origin + DPoint(
+                test_struct2.gnd_gap, -4 * test_struct2.gnd_gap
+            )
+            text_reg.transform(ICplxTrans(1.0, 0, False, text_bl.x, text_bl.y))
+            self.region_ph -= text_reg
+            test_jj = AsymSquid(test_struct2.center, new_pars_squid, side=-1)
+            self.squids.append(test_jj)
+            test_jj.place(self.region_el)
+
+            # test structure for bridge DC contact
+            test_struct3 = TestStructurePads(struct_center + DPoint(0.6e6, 0))
+            test_struct3.place(self.region_ph)
+            text_reg = pya.TextGenerator.default_generator().text("DC", 0.001, 50, False, 0, 0)
+            text_bl = test_struct3.empty_rectangle.origin + DPoint(
+                test_struct3.gnd_gap, -4 * test_struct3.gnd_gap
+            )
+            text_reg.transform(ICplxTrans(1.0, 0, False, test_struct3.center.x, text_bl.y))
+            self.region_ph -= text_reg
+
+            test_bridges = []
+            for i in range(3):
+                bridge = Bridge1(test_struct3.center + DPoint(50e3*(i-1), 0),
+                                 gnd_touch_dx=10e3)
+                test_bridges.append(bridge)
+                bridge.place(self.region_bridges1, region_name="bridges_1")
+                bridge.place(self.region_bridges2, region_name="bridges_2")
+
     def draw_photo_el_marks(self):
-        marks_centers = [DPoint(1200e3, 9000e3), DPoint(8000e3, 4000e3)]
+        marks_centers = [
+            DPoint(1e6, 9e6), DPoint(1e6, 1e6),
+            DPoint(9e6, 1e6), DPoint(9e6, 9e6),
+            DPoint(8e6, 4e6), DPoint(1e6, 6e6)
+        ]
         for mark_center in marks_centers:
             self.marks.append(
                 Mark2(
                     mark_center,
-                    cross_thickness=1e3 + FABRICATION.OVERETCHING,
-                    cross_size=3e3 + 2*FABRICATION.OVERETCHING
+                    cross_thickness=2e3 + FABRICATION.OVERETCHING,
+                    cross_size=6e3 + 2*FABRICATION.OVERETCHING
                 )
             )
             self.marks[-1].place(self.region_ph)
 
     def draw_bridges(self):
-        self.region_bridges2.insert(self.chip_box)
         bridges_step = 150e3
 
         # for resonators

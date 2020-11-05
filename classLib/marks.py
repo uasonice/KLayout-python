@@ -58,11 +58,11 @@ class Mark2(ComplexBase):
         self.ring2_thickness = 30e3
         self.inner_circle_radius = 200e3
         self.trap_h = 150e3
-        self.trap_b = 1e3
         self.trap_t = 100e3
-        self.trap_dist = 3e3  # distance from the center
         self.cross_thickness = cross_thickness
         self.cross_size = cross_size
+        self.trap_b = self.cross_thickness
+        self.trap_dist = 2*self.cross_thickness  # distance from the center
         super().__init__(origin, trans_in)
 
     def init_primitives(self):

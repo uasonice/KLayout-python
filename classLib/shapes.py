@@ -9,9 +9,28 @@ from classLib.coplanars import CPW
 
 
 class Rectangle(ElementBase):
-    def __init__(self, origin, a, b, trans_in=None, inverse=False):
-        self.a = a
-        self.b = b
+    def __init__(self, origin, width, height, trans_in=None, inverse=False):
+        """
+        Represents rectange object
+
+        Parameters
+        ----------
+        origin : DPoint
+            left-bottom point of rectangle
+        width : float
+            rectangle's width
+        height : height
+            rectangle's height
+        trans_in : DcplxTrans
+            Initial transformation
+        inverse : bool
+            If the rectangle should be added or substracted from destination
+            during the call of `self.place`.
+            True - rectangle is substracted
+            False - rectangle is added (default)
+        """
+        self.a = width
+        self.b = height
         super().__init__(origin, trans_in, inverse)
 
     def init_regions(self):
@@ -24,6 +43,10 @@ class Rectangle(ElementBase):
             self.empty_region.insert(SimplePolygon().from_dpoly(DSimplePolygon(pts_arr)))
         else:
             self.metal_region.insert(SimplePolygon().from_dpoly(DSimplePolygon(pts_arr)))
+        self.connections = [origin]
+
+    def _refresh_named_connections(self):
+        self.origin = self.connections[0]
 
 
 class Cross(ElementBase):

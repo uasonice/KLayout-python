@@ -246,7 +246,7 @@ class ComplexBase(ElementBase):
             self.make_trans(dCplxTrans_temp)
             dr_origin.transform(dCplxTrans_temp)
 
-        dCplxTrans_temp = DCplxTrans(1, 0, False, self.origin)
+        dCplxTrans_temp = DCplxTrans(1, 0, False, self.origin.x, self.origin.y)
         self.make_trans(dCplxTrans_temp)  # move to the origin
         self.origin += dr_origin.point(0)
 
