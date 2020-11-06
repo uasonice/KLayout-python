@@ -187,6 +187,12 @@ class Design5Q(ChipDesign):
         self.region_bridges2 = Region()
         self.layer_bridges2 = self.layout.layer(info_bridges2)
 
+        # layer with polygons that will protect structures located
+        # on the `self.region_el` - e-beam litography layer
+        info_el_protection = pya.LayerInfo(6, 0)
+        self.region_el_protection = Region()
+        self.layer_el_protection = self.layout.layer(info_el_protection)
+
         self.lv.add_missing_layers()  # has to call it once more to add new layers
 
         ### ADDITIONAL VARIABLES SECTION START ###
@@ -302,9 +308,9 @@ class Design5Q(ChipDesign):
         self.draw_md_and_flux_lines()
 
         self.draw_test_structures()
-
         self.draw_josephson_loops()
         self.draw_el_dc_contacts()
+        self.draw_el_protection()
 
         self.draw_photo_el_marks()
         self.draw_bridges()
@@ -323,6 +329,7 @@ class Design5Q(ChipDesign):
         self.cell.shapes(self.layer_el2).insert(self.region_el2)
         self.cell.shapes(self.layer_bridges1).insert(self.region_bridges1)
         self.cell.shapes(self.layer_bridges2).insert(self.region_bridges2)
+        self.cell.shapes(self.layer_el_protection).insert(self.region_el_protection)
         self.lv.zoom_fit()
 
     def draw_chip(self):
@@ -814,6 +821,27 @@ class Design5Q(ChipDesign):
             for contact in self.el_dc_contacts[-1]:
                 contact.place(self.region_el2)
 
+            # DC contacts has to have intersection with empty layer in photo litography
+            # to ensure that first e-beam layer does not broke at the step between
+            # substrate and photolytography polygons.
+            # Following rectangle pads are cutted from photo region to ensure
+            # DC contacts are covering aforementioned level step.
+            squid_pad_r = squid.params.pad_r
+            squid_pads_d = squid.params.pads_distance - 2 * squid_pad_r
+            rec_width = 1.6 * squid_pad_r - 2 * FABRICATION.OVERETCHING
+            rec_height = 1.6 * squid_pad_r - FABRICATION.OVERETCHING
+            # Rectangle for top DC contact pad
+            p1 = squid.origin + DVector(-rec_width / 2, squid_pads_d / 2) + \
+                 DVector(0, -FABRICATION.OVERETCHING)
+            rec_top = Rectangle(p1, rec_width, rec_height, inverse=True)
+            rec_top.place(self.region_ph)
+
+            # Rectangle for bottom DC contact pad
+            p2 = squid.origin + DVector(-rec_width / 2, -squid_pads_d / 2) + \
+                 DVector(0, FABRICATION.OVERETCHING)
+            rec_bot = Rectangle(p2, rec_width, -rec_height, inverse=True)
+            rec_bot.place(self.region_ph)
+
     def draw_test_structures(self):
         new_pars_squid = AsymSquidParams(
             pad_r=5e3, pads_distance=30e3,
@@ -870,6 +898,41 @@ class Design5Q(ChipDesign):
                 test_bridges.append(bridge)
                 bridge.place(self.region_bridges1, region_name="bridges_1")
                 bridge.place(self.region_bridges2, region_name="bridges_2")
+
+        # bandages test structures
+        test_dc_el2_centers = [
+            DPoint(2.5e6, 2.4e6),
+            DPoint(4.2e6, 1.6e6),
+            DPoint(9.0e6, 3.8e6)
+        ]
+        for struct_center in test_dc_el2_centers:
+            test_struct1 = TestStructurePads(struct_center)
+            test_struct1.place(self.region_ph)
+            text_reg = pya.TextGenerator.default_generator().text("Bandage", 0.001, 40, False, 0, 0)
+            text_bl = test_struct1.empty_rectangle.origin + DPoint(
+                test_struct1.gnd_gap, -4 * test_struct1.gnd_gap
+            )
+            text_reg.transform(ICplxTrans(1.0, 0, False, text_bl.x, text_bl.y))
+            self.region_ph -= text_reg
+
+            rec_width = 10e3
+            rec_height = test_struct1.rectangles_gap + 2*FABRICATION.OVERETCHING + 2*rec_width
+            p1 = struct_center - DVector(rec_width/2, rec_height/2)
+            dc_rec = Rectangle(p1, rec_width, rec_height)
+            dc_rec.place(self.region_el2)
+
+
+    def draw_el_protection(self):
+        protection_a = 300e3
+        for squid in self.squids:
+            self.region_el_protection.insert(
+                pya.Box().from_dbox(
+                    pya.DBox(
+                        squid.origin - 0.5*DVector(protection_a, protection_a),
+                        squid.origin + 0.5*DVector(protection_a, protection_a)
+                        )
+                )
+            )
 
     def draw_photo_el_marks(self):
         marks_centers = [
@@ -957,7 +1020,6 @@ class Design5Q(ChipDesign):
         for poly in self.region_ph:
             if poly.num_points() > max_pts:
                 print("exists bridge2")
-
 
 
 if __name__ == "__main__":
