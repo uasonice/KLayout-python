@@ -6,7 +6,7 @@ import pya
 from pya import Cell
 from pya import Point, Vector,\
     DPoint, DVector, DSimplePolygon, SimplePolygon, DPolygon, Polygon, Region
-from pya import Trans, DTrans, CplxTrans, DCplxTrans, ICplxTrans
+from pya import Trans, DTrans, CplxTrans, DCplxTrans, ICplxTrans, Path
 
 from importlib import reload
 import classLib
@@ -26,6 +26,9 @@ from classLib.marks import Mark2
 from classLib.coplanars import CPW, CPW_arc
 from typing import List, Dict, Union, Optional
 from classLib.contactPads import ContactPad
+
+
+from classLib.helpers import fill_holes, split_polygons
 
 
 class FluxLineEnd(ElementBase):
@@ -294,23 +297,33 @@ class Design5Q(ChipDesign):
         '''
         self.create_resonator_objects()
         self.draw_readout_waveguide()
-        #
+
         self.draw_xmons_and_resonators()
         self.draw_md_and_flux_lines()
 
         self.draw_test_structures()
-        #
+
         self.draw_josephson_loops()
         self.draw_el_dc_contacts()
-        #
+
         self.draw_photo_el_marks()
         self.draw_bridges()
-        # self.inverse_destination(self.region_ph)
+        self.draw_pinning_holes()
+        self.inverse_destination(self.region_ph)
+        self.split_polygons_in_layers(max_pts=190)
+
+    def _transfer_regs2cell(self):
+        # this too methods assumes that all previous drawing
+        # functions are placing their object on regions
+        # in order to avoid extensive copying of the polygons
+        # to/from cell.shapes during the logic operations on
+        # polygons
         self.cell.shapes(self.layer_ph).insert(self.region_ph)
         self.cell.shapes(self.layer_el).insert(self.region_el)
         self.cell.shapes(self.layer_el2).insert(self.region_el2)
         self.cell.shapes(self.layer_bridges1).insert(self.region_bridges1)
         self.cell.shapes(self.layer_bridges2).insert(self.region_bridges2)
+        self.lv.zoom_fit()
 
     def draw_chip(self):
         self.region_bridges2.insert(self.chip_box)
@@ -924,8 +937,23 @@ class Design5Q(ChipDesign):
                     dest=self.region_bridges1, dest2=self.region_bridges2
                 )
 
+    def draw_pinning_holes(self):
+        selection_region = Region(
+            pya.Box(Point(100e3, 100e3), Point(101e3, 101e3))
+        )
+        tmp_ph = self.region_ph.dup()
+        other_regs = tmp_ph.select_not_interacting(selection_region)
+        reg_to_fill = self.region_ph.select_interacting(selection_region)
+        filled_reg = fill_holes(reg_to_fill)
+        
+        self.region_ph = filled_reg + other_regs
+
+    def split_polygons_in_layers(self, max_pts=200):
+        self.region_ph = split_polygons(self.region_ph)
+        self.region_bridges2 = split_polygons(self.region_bridges2)
+
 
 if __name__ == "__main__":
     design = Design5Q("testScript")
     design.draw()
-    design.lv.zoom_fit()
+    design.show()

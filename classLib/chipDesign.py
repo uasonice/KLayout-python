@@ -9,7 +9,7 @@ from typing import Union
 
 
 class ChipDesign:
-    def __init__(self, cell_name):
+    def __init__(self, cell_name="testScript"):
         """
         Inherit this class for working on a chip design
         and override draw() method where other drawing
@@ -62,7 +62,7 @@ class ChipDesign:
         self.lv.add_missing_layers()
 
         # additinal variables for convinience
-        self.origin = DPoint(0,0)
+        self.origin = DPoint(0, 0)
 
         # design parameters that were passed to the last
         # self.draw(...) call are stored here as ordered dict
@@ -91,14 +91,16 @@ class ChipDesign:
 
     # Call this m
     def show(self, design_params=None):
-        self.__transfer_reg2cell()
+        self._transfer_regs2cell()
 
-    def __transfer_reg2cell(self):
+    def _transfer_regs2cell(self):
         # this too methods assumes that all previous drawing
         # functions are placing their object on regions
         # in order to avoid extensive copying of the polygons
         # to/from cell.shapes during the logic operations on
         # polygons
+        # can be modified in child classes if there are different
+        # layers set
         self.cell.shapes(self.layer_ph).insert(self.region_ph)
         self.cell.shapes(self.layer_el).insert(self.region_el)
         self.lv.zoom_fit()

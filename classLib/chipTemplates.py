@@ -101,18 +101,19 @@ class CHIP_10x10_12pads:
         pcb_feedline_d = CHIP_10x10_12pads.pcb_feedline_d
         pcb_Z = CHIP_10x10_12pads.pcb_Z
         chip_Z = CHIP_10x10_12pads.chip_Z
-
+        back_metal_gap = 100e3
+        
         contact_pads_left = [
             ContactPad(
                 DPoint(0, dy - pcb_feedline_d * (i + 1)), pcb_Z, chip_Z, back_metal_width=50e3,
-                back_metal_gap=100e3
+                back_metal_gap=back_metal_gap
             ) for i in range(3)
         ]
 
         contact_pads_bottom = [
             ContactPad(
                 DPoint(pcb_feedline_d * (i + 1), 0), pcb_Z, chip_Z, back_metal_width=50e3,
-                back_metal_gap=100e3,
+                back_metal_gap=back_metal_gap,
                 trans_in=Trans.R90
             ) for i in range(3)
         ]
@@ -120,7 +121,7 @@ class CHIP_10x10_12pads:
         contact_pads_right = [
             ContactPad(
                 DPoint(dx, pcb_feedline_d*(i+1)), pcb_Z, chip_Z, back_metal_width=50e3,
-                back_metal_gap=100e3,
+                back_metal_gap=back_metal_gap,
                 trans_in=Trans.R180
             ) for i in range(3)
         ]
@@ -128,7 +129,7 @@ class CHIP_10x10_12pads:
         contact_pads_top = [
             ContactPad(
                 DPoint(dx - pcb_feedline_d * (i + 1), dy), pcb_Z, chip_Z, back_metal_width=50e3,
-                back_metal_gap=100e3,
+                back_metal_gap=back_metal_gap,
                 trans_in=Trans.R270
             ) for i in range(3)
         ]

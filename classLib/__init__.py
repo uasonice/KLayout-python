@@ -59,4 +59,7 @@ from . import chipDesign
 reload(chipDesign)
 from .chipDesign import *
 
+from . import helpers
+reload(helpers)
+from .helpers import *
 
