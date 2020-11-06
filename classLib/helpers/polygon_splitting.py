@@ -9,26 +9,58 @@ reload(classLib)
 from classLib.chipDesign import ChipDesign
 from classLib.shapes import Circle
 
+from typing import Union, List
+
+split_shift_str = ""
+
 
 def split_polygons(obj, max_pts=200, print_tree=False):
-    global step_in_str
+    """
+    Recursively splitting polygons in region or in polygons list
+    until every resulted polygon has less than `max_pts` points.
+
+    Parameters
+    ----------  
+    obj : Union[Region, List[Polygon]]
+        Structure to operate on
+    max_pts : int
+        maximum points in each polygon
+
+    Returns
+    -------
+    Union[pya.Region, list[pya.Polygon]]
+        Resulting structure that has the same type as
+        input structure.
+    """
+    # global split_shift_str
     if isinstance(obj, pya.Region):
         result_reg = Region()
         reg_to_split = obj
+        # if print_tree:
+        #     print(split_shift_str + "got reg")
         for poly in reg_to_split:
-            result_reg.insert(split_polygons([poly], max_pts))
+            result_reg.insert(split_polygons([poly.dup()], max_pts, print_tree))
         return result_reg
     elif isinstance(obj, list):
         if isinstance(obj[0], pya.Polygon):
             # if this is list of polygons
             polygons_list = obj
+            # if print_tree:
+            #     print(split_shift_str + f"got array of {len(polygons_list)} polygons")
             resulting_polygons_list = []
             for i, poly in enumerate(polygons_list):
                 if poly.num_points() < max_pts:
+                    # if print_tree:
+                    #     print(split_shift_str + f"polygon #{i} is ok")
                     # recursion base (if all polygons satisfy this condition)
                     resulting_polygons_list.append(poly)
                 else:
-                    resulting_polygons_list.extend(split_polygons(poly.split()))
+                    # if print_tree:
+                    #     print(split_shift_str + f"polygon #{i} needs dividing")
+                    #     split_shift_str += "\t"
+                    resulting_polygons_list.extend(split_polygons(poly.split(), max_pts, print_tree))
+                    # if print_tree:
+                    #     split_shift_str = split_shift_str[:-1]
             return resulting_polygons_list
         else:
             raise ValueError("`split_polygons` function: List is supplied as argument, but this is not "
@@ -44,8 +76,8 @@ class MyDesign(ChipDesign):
         circ = Circle(origin, 200e3, n_pts=400, inverse=False)
         circ.place(self.region_ph)
 
-        self.region_ph = split_polygons(self.region_ph, max_pts=100)
-
+        self.region_ph = split_polygons(self.region_ph.dup(), max_pts=100, print_tree=True)
+        print("it's ok")
 
 import numpy as np
 ### MAIN FUNCTION ###

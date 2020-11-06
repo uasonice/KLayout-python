@@ -310,7 +310,7 @@ class Design5Q(ChipDesign):
         self.draw_bridges()
         self.draw_pinning_holes()
         self.inverse_destination(self.region_ph)
-        self.split_polygons_in_layers(max_pts=190)
+        self.split_polygons_in_layers(max_pts=180)
 
     def _transfer_regs2cell(self):
         # this too methods assumes that all previous drawing
@@ -949,8 +949,15 @@ class Design5Q(ChipDesign):
         self.region_ph = filled_reg + other_regs
 
     def split_polygons_in_layers(self, max_pts=200):
-        self.region_ph = split_polygons(self.region_ph)
-        self.region_bridges2 = split_polygons(self.region_bridges2)
+        self.region_ph = split_polygons(self.region_ph, max_pts)
+        self.region_bridges2 = split_polygons(self.region_bridges2, max_pts)
+        for poly in self.region_ph:
+            if poly.num_points() > max_pts:
+                print("exists photo")
+        for poly in self.region_ph:
+            if poly.num_points() > max_pts:
+                print("exists bridge2")
+
 
 
 if __name__ == "__main__":
