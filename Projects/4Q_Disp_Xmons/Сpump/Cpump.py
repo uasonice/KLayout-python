@@ -313,9 +313,9 @@ class Design5Q(ChipDesign):
         # x span between left long vertical line and
         # right-most center of central conductors
         resonators_widths = [2 * self.r + L_coupling for L_coupling in self.L_coupling_list]
-        x1 = 2 * self.resonators_dx + resonators_widths[3] / 2 - 2 * self.xmon_x_distance
+        x1 = 2 * self.resonators_dx + resonators_widths[2] / 2 - 2 * self.xmon_x_distance
         x2 = x1 + self.xmon_x_distance - self.resonators_dx
-        x3 = (self.L_coupling_list[2] + 2 * self.r) / 2
+        x3 = resonators_widths[2] / 2
         x4 = 3 * self.resonators_dx - (x1 + 3 * self.xmon_x_distance)
         x5 = 4 * self.resonators_dx - (x1 + 4 * self.xmon_x_distance)
 
