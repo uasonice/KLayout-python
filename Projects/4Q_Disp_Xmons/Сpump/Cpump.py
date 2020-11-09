@@ -125,7 +125,7 @@ class MDriveLineEnd(ComplexBase):
 class FABRICATION:
     # metal polygons are overetched on this value of nm
     # correponding adjustments have to be made to the design.
-    OVERETCHING = 0.75e3
+    OVERETCHING = 0
 
 
 class TestStructurePads(ComplexBase):
@@ -237,9 +237,9 @@ class Design5Q(ChipDesign):
         self.el_dc_contacts: List[List[ElementBase, ElementBase]] = []
 
         # md and flux lines attributes
-        self.shift_fl_y = self.cross_len_y + 70e3
-        self.shift_md_x = 150e3
-        self.shift_md_y = 360e3
+        self.shift_fl_y = self.cross_len_y + 60e3
+        self.shift_md_x = 40e3
+        self.shift_md_y = 400e3
 
         self.cpwrl_md1: CPW_RL_Path = None
         self.cpwrl_md1_end: MDriveLineEnd = None
@@ -496,7 +496,7 @@ class Design5Q(ChipDesign):
 
         """
         contact_pads = self.contact_pads
-        ctr_line_turn_radius = 200e3
+        ctr_line_turn_radius = 100e3
 
         xmon_center = self.xmons[-1].center
         xmon_x_distance = self.xmon_x_distance
@@ -507,18 +507,18 @@ class Design5Q(ChipDesign):
         cross_gnd_gap_x = self.cross_gnd_gap_x
 
         width_res = self.Z_res.width
-        tmp_reg = self.region_ph
-        z_md_fl = self.Z0
 
+        tmp_reg = self.region_ph
+        z_md_fl = CPWParameters(11e3, 7e3)
+
+        shift_fl_y = self.shift_fl_y
         shift_md_x = self.shift_md_x
         shift_md_y = self.shift_md_y
-        shift_fl_y = self.shift_fl_y
-
-        flux_end_width = self.cross_width_x + 2*self.cross_gnd_gap_x - 2*FABRICATION.OVERETCHING
+        flux_end_width = self.cross_width_x + 2 * self.cross_gnd_gap_x - 2 * FABRICATION.OVERETCHING
 
         md_transition = 25e3
-        md_z1_params = CPWParameters(7e3, 4e3)  # Z = 50.04 Ohm, E_eff = 6.237 (E_0 = 11.45)     (8e3, 4.15e3)
-        md_z1_length = 100e3
+        md_z1_params = CPWParameters(1e3, 2e3)  # Z = 50.04 Ohm, E_eff = 6.237 (E_0 = 11.45)     (8e3, 4.15e3)
+        md_z1_length = 200e3
         shift_md_x_side = md_z1_length + md_transition + md_z1_params.b / 2 + cross_len_x + cross_width_x / 2 + cross_gnd_gap_x
 
         # place caplanar line 1md
@@ -986,8 +986,8 @@ class Design5Q(ChipDesign):
 if __name__ == "__main__":
     design = Design5Q("testScript")
     design.draw()
-    p1 = design.xmons[1].center - DVector(255e3, 400e3)
-    p2 = design.xmons[2].center + DVector(255e3, 150e3)
+    p1 = design.xmons[1].center - DVector(255e3, 500e3)
+    p2 = design.xmons[2].center + DVector(255e3, 200e3)
     crop_box = pya.Box().from_dbox(pya.DBox(p1, p2))
-    design.crop(crop_box, design.layer_ph)
+    # design.crop(crop_box, design.layer_ph)
     design.show()

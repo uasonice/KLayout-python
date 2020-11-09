@@ -472,7 +472,7 @@ class Design5Q(ChipDesign):
         shift_fl_y = self.shift_fl_y
         shift_md_x = self.shift_md_x
         shift_md_y = self.shift_md_y
-        flux_end_width = 100e3
+        flux_end_width = self.cross_width_x + 2*self.cross_gnd_gap_x
 
         md_transition = 25e3
         md_z1_params = CPWParameters(7e3, 4e3)  # Z = 50.04 Ohm, E_eff = 6.237 (E_0 = 11.45)     (8e3, 4.15e3)
