@@ -226,7 +226,7 @@ class Design5Q(ChipDesign):
         self.r = 60e3
         self.N = 5
         self.L2_list = [self.r] * len(self.L1_list)
-        self.L3_list = [None] * len(self.L1_list)  # to be constructed
+        self.L3_list = [0e3] * len(self.L1_list)  # to be constructed
         self.L4_list = [self.r] * len(self.L1_list)
         self.width_res = 20e3 + 2*FABRICATION.OVERETCHING
         self.gap_res = 10e3 - 2*FABRICATION.OVERETCHING
