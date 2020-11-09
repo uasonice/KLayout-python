@@ -119,7 +119,11 @@ class ChipDesign:
         box_reg = Region(box)
         reg_l &= box_reg
 
-        # r_cell = r_cell - inverse_region
+        temp_i = self.cell.layout().layer(pya.LayerInfo(PROGRAM.LAYER1_NUM, 0))
+        self.cell.shapes(temp_i).insert(reg_l)
+        self.cell.layout().clear_layer(layer)
+        self.cell.layout().move_layer(temp_i, layer)
+        self.cell.layout().delete_layer(temp_i)
 
     def _reg_from_layer(self, layer):
         if layer == self.layer_el:
