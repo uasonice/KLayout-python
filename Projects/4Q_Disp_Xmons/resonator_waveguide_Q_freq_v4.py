@@ -137,10 +137,9 @@ if __name__ == "__main__":
     # x span between left long vertical line and
     # right-most center of central conductors
     resonators_widths = [2 * r + L_coupling for L_coupling in L_coupling_list]
-
-    x1 = 2 * resonators_dx + resonators_widths[3] / 2 - 2 * xmon_x_distance
+    x1 = 2 * resonators_dx + resonators_widths[2] / 2 - 2 * xmon_x_distance
     x2 = x1 + xmon_x_distance - resonators_dx
-    x3 = (L_coupling_list[2] + 2 * r) / 2
+    x3 = resonators_widths[2] / 2
     x4 = 3 * resonators_dx - (x1 + 3 * xmon_x_distance)
     x5 = 4 * resonators_dx - (x1 + 4 * xmon_x_distance)
 
