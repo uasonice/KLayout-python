@@ -97,6 +97,7 @@ class CPW_arc(ElementBase):
 
         self.width = Z0.width
         self.gap = Z0.gap
+        self.b = self.width + 2*self.gap
 
         self.delta_alpha = delta_alpha
         self.alpha_start = 0

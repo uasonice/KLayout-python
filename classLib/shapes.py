@@ -215,6 +215,9 @@ class XmonCross(ComplexBase):
 
         self.connections = [origin]
 
+    def _refresh_named_connections(self):
+        self.center = self.connections[0]
+
 
 class Circle(ElementBase):
     def __init__(self, center, r, trans_in=None, n_pts=50, inverse=False, offset_angle=0):
