@@ -123,12 +123,12 @@ class ElementBase():
 
     def _update_connections(self, dCplxTrans):
         if (dCplxTrans is not None):
-            # the problem is, if i construct polygon with multiple points 
+            # the problem is, if k construct polygon with multiple points
             # their order in poly_temp.each_point() doesn't coinside with the 
             # order of the list that was passed to the polygon constructor
-            # so, when i perform transformation and try to read new values through poly_temp.each_point()
+            # so, when k perform transformation and try to read new values through poly_temp.each_point()
             # they values are rearranged
-            # solution is: i need to create polygon for each point personally, and the initial order presists
+            # solution is: k need to create polygon for each point personally, and the initial order presists
             for i, pt in enumerate(self.connections):
                 poly_temp = DSimplePolygon([pt])
                 poly_temp.transform(dCplxTrans)

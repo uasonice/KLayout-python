@@ -376,7 +376,7 @@ if __name__ == "__main__":
     #
     # freqs = np.linspace(1e9, 5e9, 300)
     # my_design.set_fixed_parameters(freqs)
-    # my_design.set_swept_parameters( {"simBox": [SimulationBox(a, b, 100+20*i, 100+20*i) for i in range(11)]} )
+    # my_design.set_swept_parameters( {"simBox": [SimulationBox(a, b, 100+20*k, 100+20*k) for k in range(11)]} )
     # my_design.simulate_sweep()
     # my_design.save()
 

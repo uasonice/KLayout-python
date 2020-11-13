@@ -161,7 +161,7 @@ class CWave(ComplexBase):
             lengths.extend([self.L1])
             # prev_path = list(self.primitives.values())[-1]
             # rl_path_p = CPW_RL_Path( prev_path.end, "RLR", Z, self.r_curve, [self.L1], [-m_x*self.alpha,m_x*self.alpha])
-            # self.primitives["rl_path_" + str(i)] = rl_path_p
+            # self.primitives["rl_path_" + str(k)] = rl_path_p
             # ending RLR
         if (self.n_segments % 2 == 1):
             m_x = 1

@@ -39,7 +39,7 @@ caps
 # Introducing new symbols
 C12, C13, C14, C15, C23, C24, C25, C35, C45, Cin, Cout = sp.symbols('C12 C13 C14 C15 C23 C24 C25 C35 C45 Cin Cout')
 C1, C2, C3, C4 = sp.symbols('C1 C2 C3 C4')
-Cpin, Vin, Vout, iom, Isc = sp.symbols('C_{pin} V_{in} V_{out} i\omega Isc')
+Cpin, Vin, Vout, iom, Isc = sp.symbols('C_{pin} V_{in} V_{out} k\omega Isc')
 fi1, fi2, fi3, fi4 = sp.symbols("\phi_1 \phi_2 \phi_3 \phi_4")
 # Declaring their values
 C_subs = {C12: -caps['PIN1']['PIN2'],
@@ -87,7 +87,7 @@ abs(complex(expr.evalf(subs=C_subs)))
 # where
 # $$ C_1 = C_{12} + C_{13} + C_{14} + C_{15} $$
 # $$ C_2 = C_{12} + C_{23} + C_{24} + C_{25} $$
-# $$ C_4 = C_{14} + C_{24} + C_{45} + \frac{1}{i\omega R} $$
+# $$ C_4 = C_{14} + C_{24} + C_{45} + \frac{1}{k\omega R} $$
 # 
 # When Josephson junctions are not present in the circuit it is possible to calculate the ratio:
 # 
@@ -142,9 +142,9 @@ res = sp.solve([Node1, Node2], (fi1, Isc))
 res
 
 #%% [markdown]
-# $$ \frac{I_{\text{short circuit}}}{i\omega} = V_{in} \frac{\left(C_{23} - C_{13}\right) \left(C_{12} C_{4} + C_{14} C_{24}\right) + C_{13} \left(C_{2} C_{4} - C_{24}^{2}\right) - C_{23} \left(C_{1} C_{4} - C_{14}^{2}\right)}{2(C_{12}C_4 + C_{14} C_{24}) + C_{14}^2 + C_{24}^2 - (C_1 + C_2) C_4} \approx V_{in} \frac{C_{23} (C_1 - C_{12}) - C_{13}(C_2 - C_{12})}{C_1 + C_2 - 2 C_{12}}  $$
+# $$ \frac{I_{\text{short circuit}}}{k\omega} = V_{in} \frac{\left(C_{23} - C_{13}\right) \left(C_{12} C_{4} + C_{14} C_{24}\right) + C_{13} \left(C_{2} C_{4} - C_{24}^{2}\right) - C_{23} \left(C_{1} C_{4} - C_{14}^{2}\right)}{2(C_{12}C_4 + C_{14} C_{24}) + C_{14}^2 + C_{24}^2 - (C_1 + C_2) C_4} \approx V_{in} \frac{C_{23} (C_1 - C_{12}) - C_{13}(C_2 - C_{12})}{C_1 + C_2 - 2 C_{12}}  $$
 # 
-# $$ C_{eq} = \left\lvert \frac{I_{\text{short circuit}}}{i \omega V_{12}} \right\rvert = \frac{\left(C_{1} C_{4} - C_{14}^{2}\right) \left(C_{2} C_{4} - C_{24}^{2}\right) - \left(C_{12} C_{4} + C_{14} C_{24}\right)^{2}}{C_4\left(2(C_{12}C_4 + C_{14} C_{24}) + C_{14}^2 + C_{24}^2 - (C_1 + C_2) C_4\right)} \approx \frac{C_1 C_2 - C_{12}^2}{C_1 + C_2 - 2 C_{12}} $$
+# $$ C_{eq} = \left\lvert \frac{I_{\text{short circuit}}}{k \omega V_{12}} \right\rvert = \frac{\left(C_{1} C_{4} - C_{14}^{2}\right) \left(C_{2} C_{4} - C_{24}^{2}\right) - \left(C_{12} C_{4} + C_{14} C_{24}\right)^{2}}{C_4\left(2(C_{12}C_4 + C_{14} C_{24}) + C_{14}^2 + C_{24}^2 - (C_1 + C_2) C_4\right)} \approx \frac{C_1 C_2 - C_{12}^2}{C_1 + C_2 - 2 C_{12}} $$
 #%% [markdown]
 # ### Driving the qubit at the node 4
 # The node 4 is attached to a voltage source $V_{out}$ whereas the node 3 is only connected to a resistor of 50 Ohm.
@@ -175,20 +175,20 @@ print(kappa_in.evalf(subs=C_subs), kappa_out.evalf(subs=C_subs))
 
 #%% [markdown]
 # ### Calculating $\frac{V_{out}(I_{12})}{V_{in}(I_{12})}$
-# All voltage sources are disconnected from the nodes 3 and 4. A current source is in between the nodes 1 and 2. (Here $C_{in} = C_{out} = \frac{1}{i\omega R},~R=50~\Omega$)
+# All voltage sources are disconnected from the nodes 3 and 4. A current source is in between the nodes 1 and 2. (Here $C_{in} = C_{out} = \frac{1}{k\omega R},~R=50~\Omega$)
 # ![Circuit](./I12.jpg)
 # #### Kirchhoff's current law applied to the nodes 1, 2, 3 and 4:
 # 
 # 
-# $$ C_{12} \left(\phi_1 - \phi_2\right) + C_{13} \left(\phi_1 - \phi_3\right) + C_{14} \left(\phi_1 - \phi_4\right) + C_{15}\phi_1 = -\frac{I_{12}}{i\omega} $$
-# $$ C_{12} \left(\phi_2 - \phi_1\right) + C_{23} \left(\phi_2 - \phi_3\right) + C_{24} \left(\phi_2 - \phi_4\right) + C_{25}\phi_2 = \frac{I_{12}}{i\omega} $$
+# $$ C_{12} \left(\phi_1 - \phi_2\right) + C_{13} \left(\phi_1 - \phi_3\right) + C_{14} \left(\phi_1 - \phi_4\right) + C_{15}\phi_1 = -\frac{I_{12}}{k\omega} $$
+# $$ C_{12} \left(\phi_2 - \phi_1\right) + C_{23} \left(\phi_2 - \phi_3\right) + C_{24} \left(\phi_2 - \phi_4\right) + C_{25}\phi_2 = \frac{I_{12}}{k\omega} $$
 # $$ C_{13} \left(\phi_3 - \phi_1\right) + C_{23} \left(\phi_3 - \phi_2\right) + \left(C_{35} + C_{in}\right) \phi_3 = 0 $$
 # $$ C_{14} \left(\phi_4 - \phi_1\right) + C_{24} \left(\phi_4 - \phi_2\right) + \left(C_{45} + C_{out}\right) \phi_4 = 0 $$
 # 
 # Introducing $ C_1 = C_{12} + C_{13} + C_{14} + C_{15}, C_2 = C_{12} + C_{23} + C_{24} + C_{25}, C_3 = C_{13} + C_{23} + C_{35} + C_{in}, C_4 = C_{14} + C_{24} + C_{45} + C_{out}$, we get a set of equations:
 # 
-# $$ C_1\phi_1 - C_{12}\phi_2 - C_{13}\phi_3 - C_{14}\phi_4 = -\frac{I_{12}}{i\omega}$$
-# $$ C_2\phi_2 - C_{12}\phi_1 - C_{23}\phi_3 - C_{24}\phi_4 = \frac{I_{12}}{i\omega}$$
+# $$ C_1\phi_1 - C_{12}\phi_2 - C_{13}\phi_3 - C_{14}\phi_4 = -\frac{I_{12}}{k\omega}$$
+# $$ C_2\phi_2 - C_{12}\phi_1 - C_{23}\phi_3 - C_{24}\phi_4 = \frac{I_{12}}{k\omega}$$
 # $$ C_3\phi_3 - C_{13}\phi_1 - C_{23}\phi_2 = 0$$
 # $$ C_4\phi_4 - C_{14}\phi_1 - C_{24}\phi_2 = 0$$
 

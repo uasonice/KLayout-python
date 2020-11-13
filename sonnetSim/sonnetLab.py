@@ -1,12 +1,12 @@
-import csv
-
 import pya
 from pya import Point, DPoint, Vector, DVector, DSimplePolygon, SimplePolygon, DPolygon, Polygon, Region
 from classLib import *
 from sonnetSim.matlabClient import MatlabClient
 from sonnetSim.pORT_TYPES import PORT_TYPES
 
+import time
 import numpy as np
+import csv
 
 
 class SonnetPort:
@@ -15,7 +15,7 @@ class SonnetPort:
         self.port_type = port_type
 
     def __deepcopy__(self, memodict={}):
-        return SonnetPort(self.point, self.port_type) # due to the bug in copying Point(), DPoint() and other objects
+        return SonnetPort(self.point, self.port_type)  # due to the bug in copying Point(), DPoint() and other objects
 
 
 class SimulationBox:
@@ -26,9 +26,9 @@ class SimulationBox:
         self.y_n = cells_Y_num
 
 
-class SonnetLab( MatlabClient ):        
+class SonnetLab(MatlabClient):
     def __init__(self, host="localhost", port=MatlabClient.MATLAB_PORT):
-        super(SonnetLab,self).__init__(host, port)
+        super(SonnetLab, self).__init__(host, port)
         self.state = self.STATE.READY
 
         # file that stores results of the last successful simulation
@@ -36,16 +36,16 @@ class SonnetLab( MatlabClient ):
         self.ports = None  # list of SonnetPort() instances
         self.freqs = None
         self.sMatrices = None
-    
+
     def clear(self):
         self._clear()
-        
+
     def set_boxProps(self, simBox):
-        self._set_boxProps(simBox.x/1e3,
-                           simBox.y/1e3,
+        self._set_boxProps(simBox.x / 1e3,
+                           simBox.y / 1e3,
                            simBox.x_n,
                            simBox.y_n)
-        
+
     def set_ABS_sweep(self, start_f_GHz, stop_f_GHz):
         self._set_ABS_sweep(start_f_GHz, stop_f_GHz)
 
@@ -55,36 +55,36 @@ class SonnetLab( MatlabClient ):
     def set_ports(self, ports):
         from copy import deepcopy
         self.ports = deepcopy(ports)
-        
+
     def send_polygon(self, polygon, port_edges_indexes=None, port_edges_types=None):
         pts_x = np.zeros(polygon.num_points(), dtype=np.float64)
         pts_y = np.zeros(polygon.num_points(), dtype=np.float64)
         # print( "Sending polygon, edges: ", polygon.num_points_hull() )
-        if port_edges_indexes is not None :
-            print( "port edges indexes passing is not implemented yet." )
+        if port_edges_indexes is not None:
+            print("port edges indexes passing is not implemented yet.")
             raise NotImplemented
         else:
             port_edges_indexes = []
             port_edges_types = []
 
             for i, edge in enumerate(polygon.each_edge()):
-                pts_x[i] = edge.p1.x/1.0e3
-                pts_y[i] = edge.p1.y/1.0e3
+                pts_x[i] = edge.p1.x / 1.0e3
+                pts_y[i] = edge.p1.y / 1.0e3
 
                 # adding port to the current edge
                 for port in self.ports:
-                    r_middle = (edge.p1 + edge.p2)*0.5
+                    r_middle = (edge.p1 + edge.p2) * 0.5
                     R = port.point.distance(r_middle)
                     # print(r_middle, port.point, R)
                     if R < 10:  # distance from connection point to the middle of the edge <10 nm
-                        port_edges_indexes.append(i+1)  # matlab polygon edge indexing starts from 1
+                        port_edges_indexes.append(i + 1)  # matlab polygon edge indexing starts from 1
                         port_edges_types.append(port.port_type)  # choosing appropriate port type
                         break
 
         self._send_polygon(pts_x, pts_y, port_edges_indexes, port_edges_types)
-        
+
     def send_polygons(self, cell, layer_i=-1):
-        if( layer_i == -1 ): # cell is a Region()
+        if (layer_i == -1):  # cell is a Region()
             r_cell = cell
         else:
             r_cell = Region(cell.begin_shapes_rec(layer_i))
@@ -97,7 +97,7 @@ class SonnetLab( MatlabClient ):
             # So there is cuts in the polygon with internal
             # holes introduced by `resolved_holes()`.
             self.send_polygon(poly.resolved_holes())
-    
+
     def start_simulation(self, wait=True):
         '''
         @brief: function that start simulation on the remote matlab-sonnet server
@@ -111,19 +111,20 @@ class SonnetLab( MatlabClient ):
             bool - True if function has been terminated successfully
                       False otherwise          
         '''
-        if( self.state != self.STATE.READY ):
+        if (self.state != self.STATE.READY):
             return
         # send simulation command
         self._send_simulate()
 
-        if( wait == True ):
-            while( self.state == self.STATE.BUSY_SIMULATING ):
-                self.get_simulation_status() # updates self.state
+        if wait is True:
+            while (self.state == self.STATE.BUSY_SIMULATING):
+                self.get_simulation_status()  # updates self.state
+                time.sleep(1)  # sleep to release Macro GUI
 
         self.sim_res_file_path = self.read_line()
         return self.sim_res_file_path
-            
-    def get_simulation_status( self ):
+
+    def get_simulation_status(self):
         self._get_simulation_status()
         return self.state
 
@@ -143,7 +144,7 @@ class SonnetLab( MatlabClient ):
                         of the S-matrix that corresponds to the frequency
                         freq[1st index]
         '''
-        if( self.sim_res_file is None ):
+        if (self.sim_res_file is None):
             print("sonnetLab.get_s_params: self.sim_res_file is None\n\
                    None is returned")
             return None
@@ -152,11 +153,11 @@ class SonnetLab( MatlabClient ):
         with open(self.sim_res_file, "r") as my_csv_file:
             data = np.array(list(csv.reader(my_csv_file))[8:], dtype=np.float64)
         freqs = np.array(data[:, 0], dtype=np.float64)
-        s_data = np.array(data[:, 1::2] + 1j*data[:, 2::2], dtype=np.complex128)
+        s_data = np.array(data[:, 1::2] + 1j * data[:, 2::2], dtype=np.complex128)
 
         ports_N = len(self.ports)
         file_ports_N = int(round(np.sqrt(s_data.shape[1])))
-        if( ports_N != file_ports_N ):
+        if (ports_N != file_ports_N):
             print("sonnetLab.get_s_params(): internal ports number does not match\
                   file ports number,\nfile ports number:{}".format(file_ports_N))
 
@@ -173,40 +174,41 @@ class SonnetLab( MatlabClient ):
         sMatrices = s_data.reshape((len(freqs), file_ports_N, file_ports_N)).transpose(0, 2, 1)
         return freqs, sMatrices
 
-    def visualize_sever( self ):
+    def visualize_sever(self):
         self._visualize_sever()
-    
+
     def release(self):
         # print("closing connection...")
         self._close()
         # print("connection closed\n")
 
+
 if __name__ == "__main__":
-# getting main references of the application
+    # getting main references of the application
     app = pya.Application.instance()
     mw = app.main_window()
     lv = mw.current_view()
     cv = None
-    
-    #this insures that lv and cv are valid objects
-    if( lv == None ):
+
+    # this insures that lv and cv are valid objects
+    if (lv == None):
         cv = mw.create_layout(1)
         lv = mw.current_view()
     else:
         cv = lv.active_cellview()
 
-# find or create the desired by programmer cell and layer
+    # find or create the desired by programmer cell and layer
     layout = cv.layout()
     layout.dbu = 0.001
-    if( layout.has_cell( "testScript") ):
+    if (layout.has_cell("testScript")):
         pass
     else:
-        cell = layout.create_cell( "testScript" )
-    
-    info = pya.LayerInfo(1,0)
-    info2 = pya.LayerInfo(2,0)
-    layer_ph = layout.layer( info )
-    layer_el = layout.layer( info2 )
+        cell = layout.create_cell("testScript")
+
+    info = pya.LayerInfo(1, 0)
+    info2 = pya.LayerInfo(2, 0)
+    layer_ph = layout.layer(info)
+    layer_el = layout.layer(info2)
 
     # clear this cell and layer
     cell.clear()
@@ -216,23 +218,24 @@ if __name__ == "__main__":
     lv.add_missing_layers()
 
     ### DRAW SECTION START ###
-    origin = DPoint(0,0)
-    
+    origin = DPoint(0, 0)
+
     X_SIZE = 100e3
     Y_SIZE = 100e3
-    
+
     # Chip drwaing START #
-    cpw_pars = CPWParameters( 14.5e3, 6.7e3 ) 
-    box = pya.Box( 0,0, X_SIZE,Y_SIZE )
-    cell.shapes( layer_ph ).insert( box )
-    
-    cpw = CPW_RL_Path( DPoint(0,Y_SIZE/2), "LRL", cpw_pars, 10e3, [X_SIZE/2,Y_SIZE/2], np.pi/2 )
-    cpw.place( cell, layer_ph )
+    cpw_pars = CPWParameters(14.5e3, 6.7e3)
+    box = pya.Box(0, 0, X_SIZE, Y_SIZE)
+    cell.shapes(layer_ph).insert(box)
+
+    cpw = CPW_RL_Path(DPoint(0, Y_SIZE / 2), "LRL", cpw_pars, 10e3, [X_SIZE / 2, Y_SIZE / 2], np.pi / 2)
+    cpw.place(cell, layer_ph)
     ports = [SonnetPort(point, PORT_TYPES.BOX_WALL) for point in [cpw.start, cpw.end]]
     ### DRAW SECTION END ###
-    
+
     lv.zoom_fit()
     from sonnetSim.cMD import CMD
+
     ### MATLAB COMMANDER SECTION START ###
     ml_terminal = SonnetLab()
     print("starting connection...")
@@ -240,11 +243,11 @@ if __name__ == "__main__":
     ml_terminal.clear()
     simBox = SimulationBox(X_SIZE, Y_SIZE, 300, 300)
     ml_terminal.set_boxProps(simBox)
-    print( "sending cell and layer" )
+    print("sending cell and layer")
     ml_terminal.set_ports(ports)
     ml_terminal.send_polygons(cell, layer_ph)
     ml_terminal.set_ABS_sweep(1, 10)
-    print( "simulating...")
+    print("simulating...")
     result_path = ml_terminal.start_simulation(wait=True)
     print("visualizing...")
     ml_terminal.visualize_sever()
@@ -252,5 +255,5 @@ if __name__ == "__main__":
 
     with open(result_path, "r") as csv_file:
         rows = np.array(list(csv.reader(csv_file))[8:], dtype=np.float64)
-        
+
     ### MATLAB COMMANDER SECTION END ###

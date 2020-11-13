@@ -29,6 +29,8 @@ from classLib.contactPads import ContactPad
 
 from classLib.helpers import fill_holes, split_polygons
 
+import sonnetSim
+reload(sonnetSim)
 from sonnetSim.sonnetLab import SonnetLab, SonnetPort, SimulationBox
 
 
@@ -291,7 +293,7 @@ class Design5Q(ChipDesign):
         self.marks: List[Mark2] = []
         ### ADDITIONAL VARIABLES SECTION END ###
 
-    def draw(self, i=0):
+    def draw(self, i=None):
         self.draw_chip()
         '''
             Only creating object. This is due to the drawing of xmons and resonators require
@@ -491,13 +493,17 @@ class Design5Q(ChipDesign):
         self.cpwrl_ro_line.place(self.region_ph)
 
     # changed
-    def draw_xmons_and_resonators(self, i=0):
+    def draw_xmons_and_resonators(self, i=None):
+        if i is None:
+            idxs = slice(0,len(self.resonators),1)
+        else:
+            idxs = slice(i,i+1)
         for resonator, xmon_fork_penetration, xmon_dy_Cg_coupling in \
                 list(zip(
                     self.resonators,
                     self.xmon_fork_penetration_list,
                     self.xmon_dys_Cg_coupling
-                ))[i:i+1]:
+                ))[idxs]:
             xmon_center = (resonator.fork_x_cpw.start + resonator.fork_x_cpw.end) / 2 + \
                           DVector(0, -xmon_dy_Cg_coupling - resonator.fork_metal_width / 2)
             # changes start #
@@ -1093,30 +1099,47 @@ class Design5Q(ChipDesign):
 
 
 if __name__ == "__main__":
-    design = Design5Q("testScript")
-    for i in range(5):
-        print("i = ", i)
-        design.draw(i=i)
-        design.show()
+    for k in [0]:
+        ### DRAWING SECTION START ###
+        print("k = ", k)
+        design = Design5Q("testScript")
+        design.draw(i=k)
 
-        worm = design.resonators[0]
+        worm = design.resonators[k]
         xmonCross = design.xmons[0]
         worm_start = list(worm.primitives.values())[0].start
+        print(worm_start)
         # draw open end at the resonators start
         p1 = worm_start - DVector(design.Z_res.b/2, 0)
         rec = Rectangle(p1, design.Z_res.b, design.Z_res.b/2, inverse=True)
         rec.place(design.region_ph)
 
-        dr = (worm_start - xmonCross.cpw_bempt.end)
-        center = (worm_start + xmonCross.cpw_bempt.end)/2
+        design.show()
+
+        if worm_start.x < xmonCross.center.x:
+            dr = (worm_start - xmonCross.cpw_r.end)
+        else:
+            dr = (worm_start - xmonCross.cpw_l.end)
+        dr.x = abs(dr.x)
+        dr.y = abs(dr.y)
+
+        center = (worm_start + xmonCross.center)/2
         crop_box = pya.Box().from_dbox(pya.Box(
-            DPoint(center.x - dr.x - 3*design.Z_res.b, center.y - dr.y),
-            DPoint(center.x + dr.x + 3*design.Z_res.b, center.y + dr.y)
+            DPoint(
+                10e3*((center.x - dr.x - 3*design.Z_res.b)//10e3 + 1),
+                10e3*((center.y - dr.y)//10e3+1)
+            ),
+            DPoint(
+                10e3*((center.x + dr.x + 3*design.Z_res.b)//10e3 + 1),
+                10e3*((center.y + dr.y)//10e3+1)
+            )
         ))
         design.crop(crop_box)
         dr = DPoint(0, 0) - crop_box.p1
         design.sonnet_ports = [worm_start, xmonCross.cpw_b.end]
         design.transform_layer(design.layer_ph, DTrans(dr.x, dr.y), trans_ports=True)
+        design.lv.zoom_fit()
+        ### DRAWING SECTION END ###
 
         ### MATLAB COMMANDER SECTION START ###
         ml_terminal = SonnetLab()
@@ -1169,7 +1192,7 @@ if __name__ == "__main__":
             y21 = -2 * s[1][0] / delta * 1 / R
             C12 = 1e15 / (2 * math.pi * freq0 * 1e9 * (1 / y21).imag)
 
-        print(design.xmon_fork_penetration_list[i]/1e3, C12)
+        print(design.xmon_fork_penetration_list[k] / 1e3, C12)
 
         output_filepath = os.path.join(project_dir, "Xmon_resonatov_Cg_results.csv")
         if os.path.exists(output_filepath):
@@ -1177,7 +1200,7 @@ if __name__ == "__main__":
             with open(output_filepath, "a") as csv_file:
                 writer = csv.writer(csv_file)
                 writer.writerow(
-                    [design.xmon_fork_penetration_list[i] / 1e3, C12]
+                    [design.xmon_fork_penetration_list[k] / 1e3, C12]
                 )
         else:
             # create file, add header, append data
@@ -1187,5 +1210,5 @@ if __name__ == "__main__":
                 writer.writerow(
                     ["xmon_fork_penetration, um", "C12, fF"])
                 writer.writerow(
-                    [design.xmon_fork_penetration_list[i] / 1e3, C12]
+                    [design.xmon_fork_penetration_list[k] / 1e3, C12]
                 )

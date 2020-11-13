@@ -51,12 +51,12 @@ def split_polygons(obj, max_pts=200, print_tree=False):
             for i, poly in enumerate(polygons_list):
                 if poly.num_points() < max_pts:
                     # if print_tree:
-                    #     print(split_shift_str + f"polygon #{i} is ok")
+                    #     print(split_shift_str + f"polygon #{k} is ok")
                     # recursion base (if all polygons satisfy this condition)
                     resulting_polygons_list.append(poly)
                 else:
                     # if print_tree:
-                    #     print(split_shift_str + f"polygon #{i} needs dividing")
+                    #     print(split_shift_str + f"polygon #{k} needs dividing")
                     #     split_shift_str += "\t"
                     resulting_polygons_list.extend(split_polygons(poly.split(), max_pts, print_tree))
                     # if print_tree:
