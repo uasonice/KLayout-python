@@ -884,7 +884,7 @@ class EMResonatorTL3QbitWormRLTailXmonFork(EMResonatorTL3QbitWormRLTail):
         p1 = self.cpw_end_open_gap.start
         p2 = self.cpw_end_open_gap.start + DPoint(0, -forkZ.gap)
         erased_cpw = CPW(self.Z0.width, self.Z0.gap, p1, p2)
-        self.primitives["erased_cpw"] = erased_cpw
+        self.primitives["erased_fork_cpw"] = erased_cpw
 
         # erase additional spaces at the ends of fork_x_cpw
         p1 = self.fork_x_cpw.start

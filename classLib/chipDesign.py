@@ -1,5 +1,5 @@
 import pya
-from pya import Region, DPoint, Cell
+from pya import Region, DPoint, Cell, Vector, Trans, DSimplePolygon
 
 from classLib._PROG_SETTINGS import PROGRAM
 
@@ -67,6 +67,7 @@ class ChipDesign:
         # design parameters that were passed to the last
         # self.draw(...) call are stored here as ordered dict
         self.design_pars = OrderedDict()
+        self.sonnet_ports: list[DPoint] = []
 
     # Call other methods drawing parts of the design from here
     def draw(self, design_params=None):
@@ -170,6 +171,39 @@ class ChipDesign:
             dest.layout().clear_layer(layer_i)
             dest.layout().move_layer(temp_layer_i, layer_i)
             dest.layout().delete_layer(temp_layer_i)
+
+    def transform_layer(self, layer_i, trans, trans_ports=False):
+        """
+        Performs transofmation of the layer desired.
+
+        Parameters
+        ----------
+        layer_i : int
+            layer index, >0
+        trans : Union[DcplxTrans, DTrans]
+            transformation to perform
+        trans_ports : bool
+            If `True` also performs transform of `self.sonnet_ports`
+            as they are vectors.
+
+        Returns
+        -------
+        None
+        """
+        r_cell = Region(self.cell.begin_shapes_rec(layer_i))
+
+        r_cell.transform(trans)
+
+        temp_i = self.cell.layout().layer(pya.LayerInfo(PROGRAM.LAYER1_NUM, 0))
+        self.cell.shapes(temp_i).insert(r_cell)
+        self.cell.layout().clear_layer(layer_i)
+        self.cell.layout().move_layer(temp_i, layer_i)
+        self.cell.layout().delete_layer(temp_i)
+
+        if trans_ports:
+            self.sonnet_ports = list(
+                DSimplePolygon(self.sonnet_ports).transform(trans).each_point()
+            )
 
     # Save your design as GDS-II
     def save_as_gds2(self, filename):

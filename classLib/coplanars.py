@@ -486,13 +486,9 @@ class Bridge1(ElementBase):
         self.angle = self.angle_connections[0]
 
     @staticmethod
-    def bridgify_CPW(cpw, bridges_step, dest=None, bridge_layer1=-1, bridge_layer2=-1, dest2=None):
-        bridge_tmp = Bridge1(DPoint(0, 0))
-        bridge_tmp.__bridgify_CPW(
-            cpw, bridges_step,
-            dest=dest, bridge_layer1=bridge_layer1, bridge_layer2=bridge_layer2, dest2=dest2)
-
-    def __bridgify_CPW(self, cpw, bridges_step, dest=None, bridge_layer1=-1, bridge_layer2=-1, dest2=None):
+    def bridgify_CPW(cpw, bridges_step, dest=None, bridge_layer1=-1,
+                     bridge_layer2=-1, dest2=None,
+                     avoid_points=[], avoid_distance=0):
         """
             Function puts bridge patterns to fabricate bridges on coplanar waveguide
         `cpw` with bridges having period of `bridges_step` along coplanar's wave
@@ -505,18 +501,61 @@ class Bridge1(ElementBase):
             instance of coplanar class to be bridged during fabrication
         bridges_step : float
             distance between centers of bridges in nm
-        cell : pya.Cell
+        dest : pya.Cell
             cell to place bridge polygons at
         bridge_layer1 : int
             index of the layer in the `cell` with ground touching polygons
         bridge_layer2 : int
             index of the layer in the `cell` with empty polygons
+        avoid_points : list[Union[DPoint,Point,Vector, DVector]]
+            list points that you wish to keep bridges away
+        avoid_distance : float
+            distance in nm where there will be no bridges
+            near the `avoid_points`
+        Returns
+        -------
+        None
+        """
+        bridge_tmp = Bridge1(DPoint(0, 0))
+        bridge_tmp.__bridgify_CPW(
+            cpw, bridges_step,
+            dest=dest, bridge_layer1=bridge_layer1,
+            bridge_layer2=bridge_layer2, dest2=dest2,
+            avoid_points=avoid_points, avoid_distance=avoid_distance
+        )
 
+    def __bridgify_CPW(self, cpw, bridges_step, dest=None,
+                       bridge_layer1=-1, bridge_layer2=-1, dest2=None,
+                       avoid_points=[], avoid_distance=0):
+        """
+            Function puts bridge patterns to fabricate bridges on coplanar waveguide
+        `cpw` with bridges having period of `bridges_step` along coplanar's wave
+        propagation direction.
+            Bridges are distributed over coplanar starting with its center.
+
+        Parameters
+        ----------
+        cpw : Union[CPW, CPW_arc, CPW_RL_Path]
+            instance of coplanar class to be bridged during fabrication
+        bridges_step : float
+            distance between centers of bridges in nm
+        dest : pya.Cell
+            cell to place bridge polygons at
+        bridge_layer1 : int
+            index of the layer in the `cell` with ground touching polygons
+        bridge_layer2 : int
+            index of the layer in the `cell` with empty polygons
+        avoid_points : list[Union[DPoint,Point,Vector, DVector]]
+            list points that you wish to keep bridges away
+        avoid_distance : float
+            distance in nm where there will be no bridges
+            near the `avoid_points`
         Returns
         -------
         None
         """
         if isinstance(cpw, CPW):
+            # recursion base
             alpha = atan2(cpw.dr.y, cpw.dr.x)
             cpw_len = cpw.dr.abs()
             if cpw_len < (self.bridge_width + self.surround_gap):
@@ -532,9 +571,16 @@ class Bridge1(ElementBase):
             additional_bridges_n = int((cpw_len / 2 - bridge_width / 2) // bridges_step)
             bridge_centers = []
             for i in range(-additional_bridges_n, additional_bridges_n + 1):
-                bridge_centers.append(
-                    cpw.start + (cpw_len / 2 + i * bridges_step) * cpw_dir_unit_vector
-                )
+                bridge_center = cpw.start + (cpw_len / 2 + i * bridges_step) * cpw_dir_unit_vector
+
+                avoid = False
+                for avoid_point in avoid_points:
+                    if (avoid_point - bridge_center).abs() < avoid_distance:
+                        avoid = True
+                        break
+
+                if not avoid:
+                    bridge_centers.append(bridge_center)
 
             bridges = []
             for center in bridge_centers:
@@ -551,6 +597,7 @@ class Bridge1(ElementBase):
                 else:
                     bridge.place(dest=dest, layer_i=bridge_layer2, region_name="bridges_2")
         elif isinstance(cpw, CPW_arc):
+            # recursion base
             # to be implemented
             pass
         elif isinstance(cpw, CPW_RL_Path) or isinstance(cpw, Coil_type_1):
@@ -558,7 +605,8 @@ class Bridge1(ElementBase):
                 if isinstance(primitive, CPW):
                     Bridge1.bridgify_CPW(
                         primitive, bridges_step,
-                        dest, bridge_layer1, bridge_layer2, dest2=dest2
+                        dest, bridge_layer1, bridge_layer2, dest2=dest2,
+                        avoid_points=avoid_points, avoid_distance=avoid_distance
                     )
         else:
             # do nothing for other shapes

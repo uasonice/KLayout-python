@@ -151,7 +151,7 @@ class XmonCross(ComplexBase):
             self.sideX_face_gnd_gap = sideX_face_gnd_gap
 
         if sideY_face_gnd_gap is None:
-            self.sideY_face_gnd_gap = self.sideX_face_gnd_gap
+            self.sideY_face_gnd_gap = self.sideY_gnd_gap
         else:
             self.sideY_face_gnd_gap = self.sideY_face_gnd_gap
 
