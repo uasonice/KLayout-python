@@ -244,7 +244,7 @@ class Design5Q(ChipDesign):
 
         # xmon parameters
         self.xmon_x_distance: float = 485e3  # from simulation of g_12
-        self.xmon_dys_Cg_coupling = [6e3, 8e3, 10e3, 12e3, 14e3]
+        self.xmon_dys_Cg_coupling = [1e3 * x for x in [8.94218, 6.67883, 10.384, 7.49785, 12.1048]]
         self.xmons: list[XmonCross] = []
 
         self.cross_len_x = 180e3
@@ -406,9 +406,6 @@ class Design5Q(ChipDesign):
             # `xmon_x_distance`
             worm_x = self.contact_pads[-1].end.x + (res_idx + 1 / 2) * self.resonators_dx
             worm_y = self.contact_pads[-1].end.y - self.ro_line_dy - to_line
-            # `fork_y_span` based on coupling modulated with
-            # xmon_fork_penetration from `self.xmon_fork_penetration`
-            # changes here
 
             resonator_cpw = CPWParameters(self.Z_res.width + 2 * FABRICATION.OVERETCHING,
                                           self.Z_res.gap - 2 * FABRICATION.OVERETCHING)
