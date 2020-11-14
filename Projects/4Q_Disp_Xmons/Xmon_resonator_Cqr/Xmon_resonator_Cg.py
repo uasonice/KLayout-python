@@ -235,16 +235,16 @@ class Design5Q(ChipDesign):
         self.Z_res = CPWParameters(self.width_res, self.gap_res)
         self.to_line_list = [53e3] * len(self.L1_list)
         self.fork_metal_width = 20e3
-        self.fork_gnd_gap = 10e3
+        self.fork_gnd_gap = 15e3
         self.xmon_fork_gnd_gap = 15e3
         # resonator-fork parameters
         # -20e3 for Xmons in upper sweet-spot
         # -10e3 for Xmons in lower sweet-spot
-        self.xmon_fork_penetration_list = [0e3, 1e3, 2e3, 3e3, 4e3]
+        self.fork_y_spans = [0.0e3]*5
 
         # xmon parameters
         self.xmon_x_distance: float = 485e3  # from simulation of g_12
-        self.xmon_dys_Cg_coupling = [0.0e3]*5
+        self.xmon_dys_Cg_coupling = [6e3, 8e3, 10e3, 12e3, 14e3]
         self.xmons: list[XmonCross] = []
 
         self.cross_len_x = 180e3
@@ -385,7 +385,7 @@ class Design5Q(ChipDesign):
         pars = list(
             zip(
                 self.L1_list, self.to_line_list, self.L_coupling_list,
-                self.xmon_fork_penetration_list,
+                self.fork_y_spans,
                 tail_segment_lengths_list, tail_turn_angles_list, tail_trans_in_list,
                 self.L0_list
             )
@@ -395,7 +395,7 @@ class Design5Q(ChipDesign):
             L1 = params[0]
             to_line = params[1]
             L_coupling = params[2]
-            xmon_fork_penetration = params[3]
+            fork_y_span = params[3]
             tail_segment_lengths = params[4]
             tail_turn_angles = params[5]
             tail_trans_in = params[6]
@@ -408,7 +408,7 @@ class Design5Q(ChipDesign):
             worm_y = self.contact_pads[-1].end.y - self.ro_line_dy - to_line
             # `fork_y_span` based on coupling modulated with
             # xmon_fork_penetration from `self.xmon_fork_penetration`
-            fork_y_span = xmon_fork_penetration + self.xmon_fork_gnd_gap
+            # changes here
 
             resonator_cpw = CPWParameters(self.Z_res.width + 2 * FABRICATION.OVERETCHING,
                                           self.Z_res.gap - 2 * FABRICATION.OVERETCHING)
@@ -498,10 +498,10 @@ class Design5Q(ChipDesign):
             idxs = slice(0,len(self.resonators),1)
         else:
             idxs = slice(i,i+1)
-        for resonator, xmon_fork_penetration, xmon_dy_Cg_coupling in \
+        for resonator, fork_y_span, xmon_dy_Cg_coupling in \
                 list(zip(
                     self.resonators,
-                    self.xmon_fork_penetration_list,
+                    self.fork_y_spans,
                     self.xmon_dys_Cg_coupling
                 ))[idxs]:
             xmon_center = (resonator.fork_x_cpw.start + resonator.fork_x_cpw.end) / 2 + \
@@ -1097,9 +1097,8 @@ class Design5Q(ChipDesign):
                 print("exists bridge2")
 
 
-
 if __name__ == "__main__":
-    for k in [0]:
+    for k in range(5):
         ### DRAWING SECTION START ###
         print("k = ", k)
         design = Design5Q("testScript")
@@ -1149,14 +1148,14 @@ if __name__ == "__main__":
         ml_terminal._send(CMD.SAY_HELLO)
         ml_terminal.clear()
         simBox = SimulationBox(crop_box.width(), crop_box.height(),
-                               crop_box.width()/1e3/2, crop_box.height()/1e3/2)
+                               crop_box.width()/1e3/1, crop_box.height()/1e3/1)
         ml_terminal.set_boxProps(simBox)
         print("sending cell and layer")
         from sonnetSim.pORT_TYPES import PORT_TYPES
 
         ports = [
-            SonnetPort(design.sonnet_ports[0], PORT_TYPES.AUTOGROUNDED),
-            SonnetPort(design.sonnet_ports[1], PORT_TYPES.AUTOGROUNDED)
+            SonnetPort(design.sonnet_ports[1], PORT_TYPES.AUTOGROUNDED),
+            SonnetPort(design.sonnet_ports[0], PORT_TYPES.AUTOGROUNDED)
         ]
         ml_terminal.set_ports(ports)
 
@@ -1186,29 +1185,31 @@ if __name__ == "__main__":
                 for j in range(0, 2):
                     s[i][j] = complex(float(data_row[1 + 2 * (i * 2 + j)]), float(data_row[1 + 2 * (i * 2 + j) + 1]))
             import math
-
+        
+            y11 = 1 / R * (1 - s[0][0]) / (1 + s[0][0])
+            C1 = -1e15 / (2 * math.pi * freq0 * 1e9 * (1 / y11).imag)
             # formula taken from https://en.wikipedia.org/wiki/Admittance_parameters#Two_port
             delta = (1 + s[0][0]) * (1 + s[1][1]) - s[0][1] * s[1][0]
             y21 = -2 * s[1][0] / delta * 1 / R
             C12 = 1e15 / (2 * math.pi * freq0 * 1e9 * (1 / y21).imag)
 
-        print(design.xmon_fork_penetration_list[k] / 1e3, C12)
+        print(design.xmon_dys_Cg_coupling[k] / 1e3, C12, C1)
 
         output_filepath = os.path.join(project_dir, "Xmon_resonatov_Cg_results.csv")
         if os.path.exists(output_filepath):
             # append data to file
-            with open(output_filepath, "a") as csv_file:
+            with open(output_filepath, "a", newline='') as csv_file:
                 writer = csv.writer(csv_file)
                 writer.writerow(
-                    [design.xmon_fork_penetration_list[k] / 1e3, C12]
+                    [design.xmon_dys_Cg_coupling[k] / 1e3, C12, C1]
                 )
         else:
             # create file, add header, append data
-            with open(output_filepath, "w") as csv_file:
+            with open(output_filepath, "w", newline='') as csv_file:
                 writer = csv.writer(csv_file)
                 # create header of the file
                 writer.writerow(
-                    ["xmon_fork_penetration, um", "C12, fF"])
+                    ["xmon_fork_penetration, um", "C12, fF", "C1, fF"])
                 writer.writerow(
-                    [design.xmon_fork_penetration_list[k] / 1e3, C12]
+                    [design.xmon_dys_Cg_coupling[k] / 1e3, C12, C1]
                 )
