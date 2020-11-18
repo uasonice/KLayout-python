@@ -182,7 +182,7 @@ class Design5Q(ChipDesign):
         self.chip.pcb_width += 2 * FABRICATION.OVERETCHING
         self.chip.pcb_Z = CPWParameters(self.chip.pcb_width, self.chip.pcb_gap)
         self.chip.cpw_gap -= 2 * FABRICATION.OVERETCHING
-        self.chip.cpw_width += 2 * FABRICATION.OVERETCHING
+        self.chip.chip_cpw_width += 2 * FABRICATION.OVERETCHING
 
         self.chip_box = self.chip.box
         self.contact_pads: list[ContactPad] = self.chip.get_contact_pads()
@@ -191,7 +191,7 @@ class Design5Q(ChipDesign):
         self.ro_line_turn_radius: float = 200e3
         self.ro_line_dy: float = 1600e3
         self.cpwrl_ro_line: CPW_RL_Path = None
-        self.Z0 = CPWParameters(CHIP_10x10_12pads.cpw_width, CHIP_10x10_12pads.cpw_gap)
+        self.Z0 = CPWParameters(CHIP_10x10_12pads.chip_cpw_width, CHIP_10x10_12pads.cpw_gap)
 
         # resonators objects list
         self.resonators: List[EMResonatorTL3QbitWormRLTailXmonFork] = []

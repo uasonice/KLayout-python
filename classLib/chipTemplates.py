@@ -7,9 +7,12 @@ import itertools
 
 from classLib.baseClasses import ComplexBase
 from classLib.shapes import Rectangle
-from classLib.coplanars import CPWParameters
+from classLib.coplanars import CPWParameters, CPW, CPW_arc
 from classLib.contactPads import ContactPad
 
+from typing import Union, List
+
+import copy
 
 class Chip5x10_with_contactPads(ComplexBase):
     '''
@@ -90,45 +93,94 @@ class CHIP_10x10_12pads:
     pcb_feedline_d = 2500e3  # 2.5 mm
     pcb_Z = CPWParameters(pcb_width, pcb_gap)
 
-    cpw_width = 24.1e3
-    cpw_gap = 12.95e3
-    chip_Z = CPWParameters(cpw_width, cpw_gap)
+    chip_cpw_width = 24.1e3
+    chip_cpw_gap = 12.95e3
+    chip_Z = CPWParameters(chip_cpw_width, chip_cpw_gap)
 
     @staticmethod
-    def get_contact_pads():
+    def get_contact_pads(chip_Z_list: List[Union[CPWParameters, CPW, CPW_arc]]=None,
+                         overetching: float =0.0e3):
+        """
+        Constructs objects that represent contact pads. Each pad
+        consists of cpw that matches PCB cpw dimension, then trapeziod
+        transition region that ends with dimensions corresponding to
+        on-chip cpw.
+
+        Parameters
+        ----------
+        chip_Z_list : List[Union[CPWParams, CPW, CPW_arc]]
+            list of 12 structures containing dimensions of the coplanar
+            waveguides on chip-side of every contact pad.
+            Order starts from top-left (index 0) in counter_clockwise direction:
+            top contact pad at the left side of the chip has index 0.
+        overetching : float
+            parameter that is used to correct contact pad's dimension
+            according to fabrication process
+
+        Returns
+        -------
+        list[ContactPad]
+            List of contact pad objects indexed starting from top of the left corner
+            in counter-clockwise direction.
+        """
+        if chip_Z_list is None:
+            chip_Z_list = [
+                CPWParameters(
+                    CHIP_10x10_12pads.chip_cpw_width,
+                    CHIP_10x10_12pads.chip_cpw_gap
+                )
+                for i in range(12)
+            ]
+        elif len(chip_Z_list) != 12:
+            raise ValueError("`cpw_params_list` length is not equal to number of pads (12).")
+        else:
+            chip_Z_list = [
+                CPWParameters(
+                    chip_z.width + 2*overetching,
+                    chip_z.gap - 2*overetching
+                )
+                for chip_z in chip_Z_list
+            ]
+
         dx = CHIP_10x10_12pads.dx
         dy = CHIP_10x10_12pads.dy
         pcb_feedline_d = CHIP_10x10_12pads.pcb_feedline_d
         pcb_Z = CHIP_10x10_12pads.pcb_Z
-        chip_Z = CHIP_10x10_12pads.chip_Z
         back_metal_gap = 100e3
-        
+
+        k = 0
         contact_pads_left = [
             ContactPad(
-                DPoint(0, dy - pcb_feedline_d * (i + 1)), pcb_Z, chip_Z, back_metal_width=50e3,
+                DPoint(0, dy - pcb_feedline_d * (i + 1)),
+                pcb_cpw_params=pcb_Z,
+                chip_cpw_params=chip_Z_list[k + i],
+                back_metal_width=50e3,
                 back_metal_gap=back_metal_gap
             ) for i in range(3)
         ]
+        k += 3
 
         contact_pads_bottom = [
             ContactPad(
-                DPoint(pcb_feedline_d * (i + 1), 0), pcb_Z, chip_Z, back_metal_width=50e3,
+                DPoint(pcb_feedline_d * (i + 1), 0), pcb_Z, chip_Z_list[k + i], back_metal_width=50e3,
                 back_metal_gap=back_metal_gap,
                 trans_in=Trans.R90
             ) for i in range(3)
         ]
+        k += 3
 
         contact_pads_right = [
             ContactPad(
-                DPoint(dx, pcb_feedline_d*(i+1)), pcb_Z, chip_Z, back_metal_width=50e3,
+                DPoint(dx, pcb_feedline_d*(i+1)), pcb_Z, chip_Z_list[k + i], back_metal_width=50e3,
                 back_metal_gap=back_metal_gap,
                 trans_in=Trans.R180
             ) for i in range(3)
         ]
+        k += 3
 
         contact_pads_top = [
             ContactPad(
-                DPoint(dx - pcb_feedline_d * (i + 1), dy), pcb_Z, chip_Z, back_metal_width=50e3,
+                DPoint(dx - pcb_feedline_d * (i + 1), dy), pcb_Z, chip_Z_list[k + i], back_metal_width=50e3,
                 back_metal_gap=back_metal_gap,
                 trans_in=Trans.R270
             ) for i in range(3)

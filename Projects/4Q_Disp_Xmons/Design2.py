@@ -147,7 +147,7 @@ class Design5Q(ChipDesign):
         self.ro_line_turn_radius: float = 200e3
         self.ro_line_dy: float = 1600e3
         self.cpwrl_ro_line: CPW_RL_Path = None
-        self.Z0 = CPWParameters(CHIP_10x10_12pads.cpw_width, CHIP_10x10_12pads.cpw_gap)
+        self.Z0 = CPWParameters(CHIP_10x10_12pads.chip_cpw_width, CHIP_10x10_12pads.cpw_gap)
 
         # resonators objects list
         self.resonators: List[EMResonatorTL3QbitWormRLTailXmonFork] = []

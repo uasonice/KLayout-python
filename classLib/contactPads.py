@@ -57,6 +57,7 @@ class ContactPad(ComplexBase):
         self.primitives["cpw_pcb_match"] = self.cpw_pcb_match
 
         # PCB-match to on-chip waveguide trapeziod adapter
+        print(self.chip_cpw_params.gap)
         self.cpw2cpw = CPW2CPW(
             self.pcb_cpw_params,
             self.chip_cpw_params,

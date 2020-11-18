@@ -252,7 +252,7 @@ if __name__ == "__main__":
     y = 0.9 * CHIP_10x10_12pads.dy
     p1 = DPoint(0, y)
     p2 = DPoint(CHIP_10x10_12pads.dx, y)
-    Z0 = CPW(CHIP_10x10_12pads.cpw_width, CHIP_10x10_12pads.cpw_gap, p1, p2)
+    Z0 = CPW(CHIP_10x10_12pads.chip_cpw_width, CHIP_10x10_12pads.cpw_gap, p1, p2)
     
     # resonator
     # corresponding to resonanse freq is somewhere near 5 GHz
