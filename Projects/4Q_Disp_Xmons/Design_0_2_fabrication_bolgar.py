@@ -31,6 +31,7 @@ from classLib.helpers import fill_holes, split_polygons
 
 import copy
 
+
 class FluxLineEnd(ElementBase):
 
     def __init__(self, origin, fc_cpw_params, width, trans_in=None):  # width = 5e3
@@ -126,7 +127,7 @@ class MDriveLineEnd(ComplexBase):
 class FABRICATION:
     # metal polygons are overetched on this value of nm
     # correponding adjustments have to be made to the design.
-    OVERETCHING = 0.8e3
+    OVERETCHING = 0.0e3
 
 
 class TestStructurePads(ComplexBase):
@@ -219,14 +220,14 @@ class Design5Q(ChipDesign):
         self.resonators: List[EMResonatorTL3QbitWormRLTailXmonFork] = []
         # distance between nearest resonators central conductors centers
         # constant step between resonators origin points along x-axis.
-        self.resonators_dx: float = 790e3
+        self.resonators_dx: float = 850e3
         # resonator parameters
         self.L_coupling_list: list[float] = [1e3 * x for x in [230, 225, 225, 220, 215]]
         # corresponding to resonanse freq is linspaced in interval [6,9) GHz
-        self.L0 = 1600e3
-        self.L1_list = [1e3 * x for x in [53.7163, 73, 91, 87, 48]]
-        self.r = 60e3
-        self.N = 5
+        self.L0 = 1200e3
+        self.L1_list = [1e3 * x for x in [3.0375, 56.8753, 100.242, 92.4131, 32.6658]]
+        self.r = 70e3
+        self.N = 3
         self.L2_list = [self.r] * len(self.L1_list)
         self.L3_list = [0e3] * len(self.L1_list)  # to be constructed
         self.L4_list = [self.r] * len(self.L1_list)
@@ -306,10 +307,8 @@ class Design5Q(ChipDesign):
         '''
         self.create_resonator_objects()
         self.draw_readout_waveguide()
-
         self.draw_xmons_and_resonators()
         self.draw_md_and_flux_lines()
-
         self.draw_test_structures()
         self.draw_josephson_loops()
         self.draw_el_dc_contacts()
@@ -436,9 +435,9 @@ class Design5Q(ChipDesign):
             )
         # print([self.L0 - xmon_dy_Cg_coupling for xmon_dy_Cg_coupling in  self.xmon_dys_Cg_coupling])
         # print(self.L1_list)
-        # print(self.L2_list)
-        # print(self.L3_list)
-        # print(self.L4_list)
+        print(self.L2_list)
+        print(self.L3_list)
+        print(self.L4_list)
 
     def draw_readout_waveguide(self):
         '''
