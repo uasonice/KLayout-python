@@ -221,9 +221,9 @@ class Design5Q(ChipDesign):
         # constant step between resonators origin points along x-axis.
         self.resonators_dx = 900e3
         # resonator parameters
-        self.L_coupling_list = [1e3 * x for x in [230, 225, 225, 220, 215]]
+        self.L_coupling_list = [1e3 * x for x in [310, 320, 320, 310, 300]]
         # corresponding to resonanse freq is linspaced in interval [6,9) GHz
-        self.L0 = 1600e3
+        self.L0 = 1150e3
         self.L1_list = [1e3 * x for x in [50.7218, 96.3339, 138.001, 142.77, 84.9156]]
         self.r = 60e3
         self.N = 3
@@ -241,12 +241,12 @@ class Design5Q(ChipDesign):
         # -20e3 for Xmons in upper sweet-spot
         # -10e3 for Xmons in lower sweet-spot
         # for coarse C_qr evaluation
-        self.fork_y_spans = [x * 1e3 for x in [20, 6, 10]]
+        self.fork_y_spans = [x * 1e3 for x in [10, 20, 30, 40, 50]]
 
         # xmon parameters
         self.xmon_x_distance: float = 545e3  # from simulation of g_12
         # for fine C_qr evaluation
-        self.xmon_dys_Cg_coupling = [1e3 * x for x in [0]]
+        self.xmon_dys_Cg_coupling = [0]*5
         self.xmons: list[XmonCross] = []
 
         self.cross_len_x = 180e3
@@ -1098,7 +1098,7 @@ class Design5Q(ChipDesign):
 
 
 if __name__ == "__main__":
-    for k in range(1):
+    for k in range(5):
         ### DRAWING SECTION START ###
         print("k = ", k)
         design = Design5Q("testScript")
@@ -1132,23 +1132,24 @@ if __name__ == "__main__":
             xmonCross.center + (-1) * dv
         ))
         design.crop(crop_box)
-
+        dr = DPoint(0, 0) - crop_box.p1
         # find furthest edge of the `cpw_end_open_RLPath` primitive to center of the
         # xmon
-        reg1 = worm.metal_region & Region(crop_box)
-        max_distance = 0
-        port_pt = None
-        for poly in reg1.each():
-            for edge in poly.each_edge():
-                d = abs(edge.distance(xmonCross.center))
-                if d > max_distance:
-                    max_distance = d
-                    port_pt = (edge.p1 + edge.p2) / 2
+        design.sonnet_ports = [worm.primitives["cpw_end_open_RLPath"].start, xmonCross.cpw_b.end]
+        if not crop_box.contains(design.sonnet_ports[0]):
+            reg1 = worm.metal_region & Region(crop_box)
+            max_distance = 0
+            port_pt = None
+            for poly in reg1.each():
+                for edge in poly.each_edge():
+                    d = abs(edge.distance(xmonCross.center))
+                    if d > max_distance:
+                        max_distance = d
+                        port_pt = (edge.p1 + edge.p2) / 2
 
-        dr = DPoint(0, 0) - crop_box.p1
-        design.sonnet_ports = [port_pt, xmonCross.cpw_b.end]
+            design.sonnet_ports[0] = port_pt
+
         design.transform_layer(design.layer_ph, DTrans(dr.x, dr.y), trans_ports=True)
-
         design.lv.zoom_fit()
         ### DRAWING SECTION END ###
 
