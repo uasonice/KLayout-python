@@ -15,103 +15,6 @@ from sonnetSim.sonnetLab import SonnetLab, SonnetPort, SimulationBox
 from classLib.shapes import XmonCross
 
 
-class XmonCross(ComplexBase):
-    def __init__(self, origin,
-                 sideX_length, sideX_width, sideX_gnd_gap, sideX_face_gnd_gap=None,
-                 sideY_length=None, sideY_width=None, sideY_gnd_gap=None, sideY_face_gnd_gap=None,
-                 trans_in=None):
-        self.sideX_length = sideX_length
-        self.sideY_length = None
-        if sideY_length is None:
-            self.sideY_length = self.sideX_length
-        else:
-            self.sideY_length = sideY_length
-
-        self.sideX_width = sideX_width
-        self.sideY_width = None
-        if sideY_width is None:
-            self.sideY_width = self.sideX_width
-        else:
-            self.sideY_width = sideY_width
-
-        self.sideX_gnd_gap = sideX_gnd_gap
-        self.sideY_gnd_gap = None
-        if sideY_gnd_gap is None:
-            self.sideY_gnd_gap = self.sideX_gnd_gap
-        else:
-            self.sideY_gnd_gap = sideY_gnd_gap
-
-        if sideX_face_gnd_gap is None:
-            self.sideX_face_gnd_gap = self.sideX_gnd_gap
-        else:
-            self.sideX_face_gnd_gap = sideX_face_gnd_gap
-
-        if sideY_face_gnd_gap is None:
-            self.sideY_face_gnd_gap = self.sideX_face_gnd_gap
-        else:
-            self.sideY_face_gnd_gap = self.sideY_face_gnd_gap
-
-        # for saving
-        self.center = origin
-        super().__init__(origin, trans_in)
-        self._geometry_parameters["sideX_length, um"] = self.sideX_length / 1e3
-        self._geometry_parameters["sideY_length, um"] = self.sideY_length / 1e3
-        self._geometry_parameters["sideX_width, um"] = self.sideX_width / 1e3
-        self._geometry_parameters["sideY_width, um"] = self.sideY_width / 1e3
-        self._geometry_parameters["sideX_gnd_gap, um"] = self.sideX_gnd_gap / 1e3
-        self._geometry_parameters["sideY_gnd_gap, um"] = self.sideY_gnd_gap / 1e3
-        self._geometry_parameters["sideX_face_gnd_gap, um"] = self.sideX_face_gnd_gap / 1e3
-        self._geometry_parameters["sideY_face_gnd_gap, um"] = self.sideY_face_gnd_gap / 1e3
-        self.center = self.connections[0]
-
-    def init_primitives(self):
-        origin = DPoint(0, 0)
-
-        # draw central square
-        from classLib.shapes import Rectangle
-        lb_corner = DPoint(-self.sideX_width / 2, -self.sideY_width / 2)
-        center_square = Rectangle(lb_corner, self.sideX_width, self.sideY_width)
-        self.primitives["center_square"] = center_square
-
-        """ left part of Xmon cross """
-        p1 = origin + DPoint(-self.sideY_width / 2, 0)
-        p2 = p1 + DPoint(-self.sideX_length, 0)
-        self.cpw_l = CPW(self.sideX_width, self.sideX_gnd_gap, p1, p2)
-        self.primitives["cpw_l"] = self.cpw_l
-        p3 = p2 + DPoint(-self.sideX_face_gnd_gap, 0)
-        self.cpw_lempt = CPW(0, self.cpw_l.b / 2, p2, p3)
-        self.primitives["cpw_lempt"] = self.cpw_lempt
-
-        """ right part of Xmon cross """
-        p1 = origin + DPoint(self.sideY_width / 2, 0)
-        p2 = p1 + DPoint(self.sideX_length, 0)
-        self.cpw_r = CPW(self.sideX_width, self.sideX_gnd_gap, p1, p2)
-        self.primitives["cpw_r"] = self.cpw_r
-        p3 = p2 + DPoint(self.sideX_face_gnd_gap, 0)
-        self.cpw_rempt = CPW(0, self.cpw_r.b / 2, p2, p3)
-        self.primitives["cpw_rempt"] = self.cpw_rempt
-
-        """ top part of Xmon cross """
-        p1 = origin + DPoint(0, self.sideX_width / 2)
-        p2 = p1 + DPoint(0, self.sideY_length)
-        self.cpw_t = CPW(self.sideY_width, self.sideY_gnd_gap, p1, p2)
-        self.primitives["cpw_t"] = self.cpw_t
-        p3 = p2 + DPoint(0, self.sideY_face_gnd_gap)
-        self.cpw_tempt = CPW(0, self.cpw_t.b / 2, p2, p3)
-        self.primitives["cpw_tempt"] = self.cpw_tempt
-
-        """ bottom part of Xmon cross """
-        p1 = origin + DPoint(0, -self.sideX_width / 2)
-        p2 = p1 + DPoint(0, -self.sideY_length)
-        self.cpw_b = CPW(self.sideY_width, self.sideY_gnd_gap, p1, p2)
-        self.primitives["cpw_b"] = self.cpw_b
-        p3 = p2 + DPoint(0, -self.sideY_face_gnd_gap)
-        self.cpw_bempt = CPW(0, self.cpw_b.b / 2, p2, p3)
-        self.primitives["cpw_bempt"] = self.cpw_bempt
-
-        self.connections = [origin]
-
-
 class CHIP:
     dx = 0.2e6
     dy = 0.2e6
@@ -162,11 +65,11 @@ if __name__ == "__main__":
     origin = DPoint(0, 0)
 
     import itertools
-    cross_len_x_list = [1e3 * x for x in range(140, 201, 20)]
+    cross_len_x_list = [180e3]
     cross_width_list = itertools.repeat(60e3)
-    cross_len_y_list = itertools.repeat(125e3)
+    cross_len_y_list = itertools.repeat(155e3)
     cross_gnd_gap_x_list = itertools.repeat(20e3)
-    cross_gnd_gap_y_list = itertools.repeat(30e3)
+    cross_gnd_gap_y_list = itertools.repeat(20e3)
 
     # clear this cell and layer
     cell.clear()

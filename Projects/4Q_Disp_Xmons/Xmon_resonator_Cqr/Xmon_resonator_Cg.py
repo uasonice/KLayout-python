@@ -30,6 +30,7 @@ from classLib.contactPads import ContactPad
 from classLib.helpers import fill_holes, split_polygons
 
 import sonnetSim
+
 reload(sonnetSim)
 from sonnetSim.sonnetLab import SonnetLab, SonnetPort, SimulationBox
 
@@ -212,45 +213,46 @@ class Design5Q(ChipDesign):
         self.ro_line_turn_radius: float = 200e3
         self.ro_line_dy: float = 1600e3
         self.cpwrl_ro_line: CPW_RL_Path = None
-        self.Z0 = CPWParameters(CHIP_10x10_12pads.chip_cpw_width,
-                                CHIP_10x10_12pads.cpw_gap)
+        self.Z0 = CHIP_10x10_12pads.chip_Z
 
         # resonators objects list
         self.resonators: List[EMResonatorTL3QbitWormRLTailXmonFork] = []
         # distance between nearest resonators central conductors centers
         # constant step between resonators origin points along x-axis.
-        self.resonators_dx = 790e3
+        self.resonators_dx = 900e3
         # resonator parameters
         self.L_coupling_list = [1e3 * x for x in [230, 225, 225, 220, 215]]
         # corresponding to resonanse freq is linspaced in interval [6,9) GHz
         self.L0 = 1600e3
-        self.L1_list = [1e3 * x for x in [53.7163, 73, 91, 87, 48]]
+        self.L1_list = [1e3 * x for x in [50.7218, 96.3339, 138.001, 142.77, 84.9156]]
         self.r = 60e3
-        self.N = 5
+        self.N = 3
         self.L2_list = [self.r] * len(self.L1_list)
         self.L3_list = [0e3] * len(self.L1_list)  # to be constructed
         self.L4_list = [self.r] * len(self.L1_list)
         self.width_res = 20e3
         self.gap_res = 10e3
         self.Z_res = CPWParameters(self.width_res, self.gap_res)
-        self.to_line_list = [53e3] * len(self.L1_list)
+        self.to_line_list = [56e3] * len(self.L1_list)
         self.fork_metal_width = 20e3
         self.fork_gnd_gap = 15e3
         self.xmon_fork_gnd_gap = 15e3
         # resonator-fork parameters
         # -20e3 for Xmons in upper sweet-spot
         # -10e3 for Xmons in lower sweet-spot
-        self.fork_y_spans = [0.0e3]*5
+        # for coarse C_qr evaluation
+        self.fork_y_spans = [x * 1e3 for x in [20, 6, 10]]
 
         # xmon parameters
-        self.xmon_x_distance: float = 485e3  # from simulation of g_12
-        self.xmon_dys_Cg_coupling = [1e3 * x for x in [8.94218, 6.67883, 10.384, 7.49785, 12.1048]]
+        self.xmon_x_distance: float = 545e3  # from simulation of g_12
+        # for fine C_qr evaluation
+        self.xmon_dys_Cg_coupling = [1e3 * x for x in [0]]
         self.xmons: list[XmonCross] = []
 
         self.cross_len_x = 180e3
         self.cross_width_x = 60e3
         self.cross_gnd_gap_x = 20e3
-        self.cross_len_y = 60e3
+        self.cross_len_y = 160e3
         self.cross_width_y = 60e3
         self.cross_gnd_gap_y = 20e3
 
@@ -492,9 +494,9 @@ class Design5Q(ChipDesign):
     # changed
     def draw_xmons_and_resonators(self, i=None):
         if i is None:
-            idxs = slice(0,len(self.resonators),1)
+            idxs = slice(0, len(self.resonators), 1)
         else:
-            idxs = slice(i,i+1)
+            idxs = slice(i, i + 1)
         for resonator, fork_y_span, xmon_dy_Cg_coupling in \
                 list(zip(
                     self.resonators,
@@ -506,7 +508,8 @@ class Design5Q(ChipDesign):
             # changes start #
             xmon_center += DPoint(
                 0,
-                -(self.cross_len_y + self.cross_width_x / 2 + min(self.cross_gnd_gap_y, self.xmon_fork_gnd_gap)) + FABRICATION.OVERETCHING
+                -(self.cross_len_y + self.cross_width_x / 2 + min(self.cross_gnd_gap_y,
+                                                                  self.xmon_fork_gnd_gap)) + FABRICATION.OVERETCHING
             )
             # changes end #
             self.xmons.append(
@@ -524,7 +527,7 @@ class Design5Q(ChipDesign):
                     pass
                 else:
                     del resonator.primitives[key]
-            self.resonators.append(resonator)
+
             resonator.place(self.region_ph)
 
             xmonCross_corrected = XmonCross(
@@ -1095,7 +1098,7 @@ class Design5Q(ChipDesign):
 
 
 if __name__ == "__main__":
-    for k in range(5):
+    for k in range(1):
         ### DRAWING SECTION START ###
         print("k = ", k)
         design = Design5Q("testScript")
@@ -1104,10 +1107,10 @@ if __name__ == "__main__":
         worm = design.resonators[k]
         xmonCross = design.xmons[0]
         worm_start = list(worm.primitives.values())[0].start
-        print(worm_start)
+
         # draw open end at the resonators start
-        p1 = worm_start - DVector(design.Z_res.b/2, 0)
-        rec = Rectangle(p1, design.Z_res.b, design.Z_res.b/2, inverse=True)
+        p1 = worm_start - DVector(design.Z_res.b / 2, 0)
+        rec = Rectangle(p1, design.Z_res.b, design.Z_res.b / 2, inverse=True)
         rec.place(design.region_ph)
 
         design.show()
@@ -1119,35 +1122,47 @@ if __name__ == "__main__":
         dr.x = abs(dr.x)
         dr.y = abs(dr.y)
 
-        center = (worm_start + xmonCross.center)/2
+        center = (worm_start + xmonCross.center) / 2
+        box_side_x = 8 * xmonCross.sideX_length
+        box_side_y = 8 * xmonCross.sideY_length
+        dv = DVector(box_side_x / 2, box_side_y / 2)
+
         crop_box = pya.Box().from_dbox(pya.Box(
-            DPoint(
-                10e3*((center.x - dr.x - 3*design.Z_res.b)//10e3 + 1),
-                10e3*((center.y - dr.y)//10e3+1)
-            ),
-            DPoint(
-                10e3*((center.x + dr.x + 3*design.Z_res.b)//10e3 + 1),
-                10e3*((center.y + dr.y)//10e3+1)
-            )
+            xmonCross.center + dv,
+            xmonCross.center + (-1) * dv
         ))
         design.crop(crop_box)
+
+        # find furthest edge of the `cpw_end_open_RLPath` primitive to center of the
+        # xmon
+        reg1 = worm.metal_region & Region(crop_box)
+        max_distance = 0
+        port_pt = None
+        for poly in reg1.each():
+            for edge in poly.each_edge():
+                d = abs(edge.distance(xmonCross.center))
+                if d > max_distance:
+                    max_distance = d
+                    port_pt = (edge.p1 + edge.p2) / 2
+
         dr = DPoint(0, 0) - crop_box.p1
-        design.sonnet_ports = [worm_start, xmonCross.cpw_b.end]
+        design.sonnet_ports = [port_pt, xmonCross.cpw_b.end]
         design.transform_layer(design.layer_ph, DTrans(dr.x, dr.y), trans_ports=True)
+
         design.lv.zoom_fit()
         ### DRAWING SECTION END ###
 
         ### MATLAB COMMANDER SECTION START ###
         ml_terminal = SonnetLab()
-        print("starting connection...")
+        # print("starting connection...")
         from sonnetSim.cMD import CMD
 
         ml_terminal._send(CMD.SAY_HELLO)
         ml_terminal.clear()
         simBox = SimulationBox(crop_box.width(), crop_box.height(),
-                               crop_box.width()/1e3/1, crop_box.height()/1e3/1)
+                               crop_box.width() / 1e3 / 4, crop_box.height() / 1e3 / 4)
         ml_terminal.set_boxProps(simBox)
-        print("sending cell and layer")
+        # print("sending cell and layer")
         from sonnetSim.pORT_TYPES import PORT_TYPES
 
         ports = [
@@ -1182,7 +1197,7 @@ if __name__ == "__main__":
                 for j in range(0, 2):
                     s[i][j] = complex(float(data_row[1 + 2 * (i * 2 + j)]), float(data_row[1 + 2 * (i * 2 + j) + 1]))
             import math
-        
+
             y11 = 1 / R * (1 - s[0][0]) / (1 + s[0][0])
             C1 = -1e15 / (2 * math.pi * freq0 * 1e9 * (1 / y11).imag)
             # formula taken from https://en.wikipedia.org/wiki/Admittance_parameters#Two_port

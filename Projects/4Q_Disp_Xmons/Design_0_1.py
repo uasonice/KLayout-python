@@ -75,7 +75,7 @@ class EMResonatorTL2QbitWormRLTail(ComplexBase):
         self._geometry_parameters["r, um"] = r / 1e3
         self._geometry_parameters["L2, um"] = L2 / 1e3
         self._geometry_parameters["L3, um"] = L2 / 1e3
-        self._geometry_parameters["N"] = N
+        self._geometry_parameters["N_coils"] = N
 
         self.start = self.connections[0]
         self.end = self.connections[-1]

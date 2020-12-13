@@ -36,7 +36,7 @@ class EMResonator_TL2Qbit_worm3_1(ComplexBase):
         self._geometry_parameters["L1, um"] = L1
         self._geometry_parameters["r, um"] = r
         self._geometry_parameters["L2, um"] = L2
-        self._geometry_parameters["N"] = N
+        self._geometry_parameters["N_coils"] = N
 
         self.start = self.connections[0]
         self.end = self.connections[-1]

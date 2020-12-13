@@ -220,21 +220,21 @@ class Design5Q(ChipDesign):
         self.resonators: List[EMResonatorTL3QbitWormRLTailXmonFork] = []
         # distance between nearest resonators central conductors centers
         # constant step between resonators origin points along x-axis.
-        self.resonators_dx: float = 850e3
+        self.resonators_dx: float = 900e3
         # resonator parameters
-        self.L_coupling_list: list[float] = [1e3 * x for x in [230, 225, 225, 220, 215]]
+        self.L_coupling_list: list[float] = [1e3 * x for x in [310, 320, 320, 310, 300]]
         # corresponding to resonanse freq is linspaced in interval [6,9) GHz
-        self.L0 = 1200e3
-        self.L1_list = [1e3 * x for x in [3.0375, 56.8753, 100.242, 92.4131, 32.6658]]
-        self.r = 70e3
-        self.N = 3
+        self.L0 = 1150e3
+        self.L1_list = [1e3 * x for x in [50.7218, 96.3339, 138.001, 142.77, 84.9156]]
+        self.r = 60e3
+        self.N_coils = [3] * len(self.L1_list)
         self.L2_list = [self.r] * len(self.L1_list)
         self.L3_list = [0e3] * len(self.L1_list)  # to be constructed
         self.L4_list = [self.r] * len(self.L1_list)
         self.width_res = 20e3
         self.gap_res = 10e3
         self.Z_res = CPWParameters(self.width_res, self.gap_res)
-        self.to_line_list = [53e3] * len(self.L1_list)
+        self.to_line_list = [56e3] * len(self.L1_list)
         self.fork_metal_width = 20e3
         self.fork_gnd_gap = 15e3
         self.xmon_fork_gnd_gap = 15e3
@@ -244,14 +244,14 @@ class Design5Q(ChipDesign):
         self.fork_y_spans = [0.0e3]*5
 
         # xmon parameters
-        self.xmon_x_distance: float = 485e3  # from simulation of g_12
+        self.xmon_x_distance: float = 545e3  # from simulation of g_12
         self.xmon_dys_Cg_coupling = [1e3 * x for x in [8.94218, 6.67883, 10.384, 7.49785, 12.1048]]
         self.xmons: list[XmonCross] = []
 
         self.cross_len_x = 180e3
         self.cross_width_x = 60e3
         self.cross_gnd_gap_x = 20e3
-        self.cross_len_y = 60e3
+        self.cross_len_y = 155e3
         self.cross_width_y = 60e3
         self.cross_gnd_gap_y = 20e3
 
@@ -400,7 +400,7 @@ class Design5Q(ChipDesign):
                 self.L1_list, self.to_line_list, self.L_coupling_list,
                 self.fork_y_spans,
                 tail_segment_lengths_list, tail_turn_angles_list, tail_trans_in_list,
-                self.L0_list
+                self.L0_list, self.N_coils
             )
         )
         for res_idx, params in enumerate(pars):
@@ -413,6 +413,7 @@ class Design5Q(ChipDesign):
             tail_turn_angles = params[5]
             tail_trans_in = params[6]
             L0 = params[7]
+            n_coils = params[8]
 
             # deduction for resonator placements
             # under condition that Xmon-Xmon distance equals
@@ -424,7 +425,7 @@ class Design5Q(ChipDesign):
                                           self.Z_res.gap - 2 * FABRICATION.OVERETCHING)
             self.resonators.append(
                 EMResonatorTL3QbitWormRLTailXmonFork(
-                    resonator_cpw, DPoint(worm_x, worm_y), L_coupling, L0, L1, self.r, self.N,
+                    resonator_cpw, DPoint(worm_x, worm_y), L_coupling, L0, L1, self.r, n_coils,
                     tail_shape=res_tail_shape, tail_turn_radiuses=tail_turn_radiuses,
                     tail_segment_lengths=tail_segment_lengths,
                     tail_turn_angles=tail_turn_angles, tail_trans_in=tail_trans_in,
@@ -1023,17 +1024,14 @@ class Design5Q(ChipDesign):
             for name, res_primitive in resonator.primitives.items():
                 if "coil0" in name:
                     # skip L_coupling coplanar.
-                    bridgify_lambda = lambda x: Bridge1.bridgify_CPW(
-                        x, bridges_step,
-                        dest=self.region_bridges1, dest2=self.region_bridges2
-                    )
                     # bridgyfy all in "coil0" except for the first cpw that
                     # is adjacent to readout line and has length equal to `L_coupling`
-                    map(
-                        bridgify_lambda,
-                        list(res_primitive.primitives.values())[1:]
+                    for primitive in list(res_primitive.primitives.values())[1:]:
+                        Bridge1.bridgify_CPW(
+                            primitive, bridges_step,
+                            dest=self.region_bridges1, dest2=self.region_bridges2
+                        )
 
-                    )
                     continue
                 elif "fork" in name:  # skip fork primitives
                     continue

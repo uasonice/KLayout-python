@@ -6,6 +6,8 @@ from pya import Trans, DTrans, CplxTrans, DCplxTrans, ICplxTrans
 from classLib._PROG_SETTINGS import *
 
 from collections import OrderedDict
+import itertools
+
 
 
 class ElementBase():
@@ -113,11 +115,10 @@ class ElementBase():
 
     def make_trans(self, dCplxTrans):
         if (dCplxTrans is not None):
-            reg_pairs = zip(self.metal_regions.values(), self.empty_regions.values())
-            for metal_region, empty_region in reg_pairs:
+            regions = itertools.chain(self.metal_regions.values(), self.empty_regions.values())
+            for reg in regions:
                 iCplxTrans = ICplxTrans().from_dtrans(dCplxTrans)
-                metal_region.transform(iCplxTrans)
-                empty_region.transform(iCplxTrans)
+                reg.transform(iCplxTrans)
             self._update_connections(dCplxTrans)
             self._update_alpha(dCplxTrans)
 
@@ -228,6 +229,9 @@ class ComplexBase(ElementBase):
     def make_trans(self, dCplxTrans_temp):
         for primitive in self.primitives.values():
             primitive.make_trans(dCplxTrans_temp)
+        for region in itertools.chain(self.metal_regions.values(), self.empty_regions.values()):
+            iCplxTrans = ICplxTrans().from_dtrans(dCplxTrans_temp)
+            region.transform(iCplxTrans)
         self._update_connections(dCplxTrans_temp)
         self._update_alpha(dCplxTrans_temp)
 
@@ -249,7 +253,6 @@ class ComplexBase(ElementBase):
         dCplxTrans_temp = DCplxTrans(1, 0, False, self.origin.x, self.origin.y)
         self.make_trans(dCplxTrans_temp)  # move to the origin
         self.origin += dr_origin.point(0)
-
         # FOLLOWING CYCLE GIVES WRONG INFO ABOUT FILLED AND ERASED AREAS
         for element in self.primitives.values():
             self.metal_region += element.metal_region

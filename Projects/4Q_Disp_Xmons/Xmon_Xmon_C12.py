@@ -72,11 +72,11 @@ if __name__ == "__main__":
     cross_lens_x = [180e3]
     cross_widths_x = [60e3]
     cross_gnd_gaps_x = [20e3]
-    cross_lens_y = [60e3]
+    cross_lens_y = [155e3]
     cross_widths_y = [60e3]
     cross_gnd_gaps_y = [20e3]
 
-    xmon_x_distances = [485e3]
+    xmon_x_distances = [545e3]
     # clear this cell and layer
     cell.clear()
 
