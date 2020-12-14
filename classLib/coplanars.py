@@ -303,7 +303,7 @@ class CPW_RL_Path(ComplexBase):
             self._turn_radiuses = [turn_radiuses] * self._N_turns
         if hasattr(segment_lengths, "__len__"):
             if len(segment_lengths) != self._N_straights:
-                raise ValueError("Turn raduises dimension mismatch")
+                raise ValueError("Straight segments dimension mismatch")
             else:
                 self._segment_lengths = copy.deepcopy(segment_lengths)
         else:

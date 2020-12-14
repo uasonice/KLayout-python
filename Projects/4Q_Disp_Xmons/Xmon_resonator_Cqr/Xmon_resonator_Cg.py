@@ -36,10 +36,9 @@ from sonnetSim.sonnetLab import SonnetLab, SonnetPort, SimulationBox
 
 
 class FluxLineEnd(ElementBase):
-
     def __init__(self, origin, fc_cpw_params, width, trans_in=None):  # width = 5e3
 
-        self._fc_cpw_params = fc_cpw_params
+        self._fc_cpw_params: Union[CPW, CPWParameters, CPW_arc] = fc_cpw_params
         self._width = width
 
         super().__init__(origin, trans_in)
@@ -48,21 +47,28 @@ class FluxLineEnd(ElementBase):
         self.end = self.connections[1]
 
     def init_regions(self):
-        w_fc, g_fc = self._fc_cpw_params.width, self._fc_cpw_params.gap
+        # flux CPW width and gap
+        f_cpw = self._fc_cpw_params
+        p1 = DPoint(-f_cpw.b / 2, -f_cpw.width)
+        p2 = p1 + DPoint(0, 2*f_cpw.width)
+        p3 = p2 + DPoint(f_cpw.gap, 0)
+        p4 = p3 + DPoint(0, -2*f_cpw.width)
+        metal_points = [p1, p2, p3, p4]
+        self.metal_region.insert(Region(DSimplePolygon(metal_points)))
 
-        empty_points = [DPoint(w_fc / 2, 0),
-                        DPoint(w_fc / 2, w_fc),
-                        DPoint(-self._width / 2, w_fc),
-                        DPoint(-self._width / 2, w_fc + g_fc),
-                        DPoint(self._width / 2, w_fc + g_fc),
-                        DPoint(self._width / 2, w_fc),
-                        DPoint(w_fc / 2 + g_fc, w_fc),
-                        DPoint(w_fc / 2 + g_fc, 0)]
+        empty_points = [DPoint(f_cpw.width / 2, 0),
+                        DPoint(f_cpw.width / 2, f_cpw.width),
+                        DPoint(-self._width / 2, f_cpw.width),
+                        DPoint(-self._width / 2, f_cpw.width + f_cpw.gap),
+                        DPoint(self._width / 2, f_cpw.width + f_cpw.gap),
+                        DPoint(self._width / 2, f_cpw.width),
+                        DPoint(f_cpw.width / 2 + f_cpw.gap, f_cpw.width),
+                        DPoint(f_cpw.width / 2 + f_cpw.gap, 0)]
 
         empty_region = Region(DSimplePolygon(empty_points))
         self.empty_region.insert(empty_region)
 
-        self.connections = [DPoint(0, 0), DPoint(0, w_fc + g_fc)]
+        self.connections = [DPoint(0, 0), DPoint(0, f_cpw.width + f_cpw.gap)]
 
 
 class MDriveLineEnd(ComplexBase):
@@ -234,19 +240,19 @@ class Design5Q(ChipDesign):
         self.gap_res = 10e3
         self.Z_res = CPWParameters(self.width_res, self.gap_res)
         self.to_line_list = [56e3] * len(self.L1_list)
-        self.fork_metal_width = 20e3
+        self.fork_metal_width = 10e3
         self.fork_gnd_gap = 15e3
-        self.xmon_fork_gnd_gap = 15e3
+        self.xmon_fork_gnd_gap = 14e3
         # resonator-fork parameters
         # -20e3 for Xmons in upper sweet-spot
         # -10e3 for Xmons in lower sweet-spot
         # for coarse C_qr evaluation
-        self.fork_y_spans = [x * 1e3 for x in [10, 20, 30, 40, 50]]
+        self.fork_y_spans = [x * 1e3 for x in [0, 20, 40, 60, 80]]
 
         # xmon parameters
         self.xmon_x_distance: float = 545e3  # from simulation of g_12
         # for fine C_qr evaluation
-        self.xmon_dys_Cg_coupling = [0]*5
+        self.xmon_dys_Cg_coupling = [14e3] * 5
         self.xmons: list[XmonCross] = []
 
         self.cross_len_x = 180e3
@@ -571,7 +577,7 @@ class Design5Q(ChipDesign):
         shift_md_x = self.shift_md_x
         shift_md_y = self.shift_md_y
         md0_md5_gnd = 5e3
-        flux_end_width = self.cross_width_x + 2 * self.cross_gnd_gap_x - 2 * FABRICATION.OVERETCHING
+        flux_end_width = (self.cross_width_x + 2 * self.cross_gnd_gap_x) - 2 * FABRICATION.OVERETCHING
 
         md_transition = 25e3
         md_z1_params = CPWParameters(2e3 + 2 * FABRICATION.OVERETCHING,
@@ -1161,7 +1167,7 @@ if __name__ == "__main__":
         ml_terminal._send(CMD.SAY_HELLO)
         ml_terminal.clear()
         simBox = SimulationBox(crop_box.width(), crop_box.height(),
-                               crop_box.width() / 1e3 / 4, crop_box.height() / 1e3 / 4)
+                               crop_box.width() / 1e3, crop_box.height() / 1e3)
         ml_terminal.set_boxProps(simBox)
         # print("sending cell and layer")
         from sonnetSim.pORT_TYPES import PORT_TYPES
@@ -1206,7 +1212,7 @@ if __name__ == "__main__":
             y21 = -2 * s[1][0] / delta * 1 / R
             C12 = 1e15 / (2 * math.pi * freq0 * 1e9 * (1 / y21).imag)
 
-        print(design.xmon_dys_Cg_coupling[k] / 1e3, C12, C1)
+        print(design.fork_y_spans[k] / 1e3, design.xmon_dys_Cg_coupling[k] / 1e3, C12, C1)
 
         output_filepath = os.path.join(project_dir, "Xmon_resonatov_Cg_results.csv")
         if os.path.exists(output_filepath):
