@@ -1,3 +1,14 @@
+"""
+    This helper draws a grid of holes for pinning vortices in a superconducting chip.
+    In order to use this helper, select a shape or a few shapes in your chip
+    and then run the script.
+    If you need to use `fill_holes(...)` in your job, just write:
+    ```python
+    from classLib.helpers import fill_holes
+    and call the function with desired arguments.
+    ```
+"""
+
 import pya
 from math import sqrt, cos, sin, atan2, pi, copysign
 from pya import Point, DPoint, DSimplePolygon, SimplePolygon, DPolygon, Polygon, Region, Path
@@ -6,12 +17,6 @@ from pya import Trans, DTrans, CplxTrans, DCplxTrans, ICplxTrans
 from classLib import *
 
 import sys
-
-""" 
-    This helper draws a grid of holes for pinning vortices in a superconducting chip.
-    In order to use this helper, select a shape or a few shapes in your chip
-    and then run the script
-"""
 
 
 def fill_holes(obj, dx=40e3, dy=40e3, width=32e3, height=32e3, d=150e3):

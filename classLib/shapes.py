@@ -46,7 +46,7 @@ class Rectangle(ElementBase):
         self.connections = [origin]
 
     def _refresh_named_connections(self):
-        self.origin = self.connections[0]
+        self.lb_corner = self.connections[0]
 
 
 class Cross(ElementBase):
@@ -153,7 +153,7 @@ class XmonCross(ComplexBase):
         if sideY_face_gnd_gap is None:
             self.sideY_face_gnd_gap = self.sideY_gnd_gap
         else:
-            self.sideY_face_gnd_gap = self.sideY_face_gnd_gap
+            self.sideY_face_gnd_gap = sideY_face_gnd_gap
 
         # for saving
         self.center = origin
@@ -268,6 +268,8 @@ class Kolbaska(ElementBase):
         self._vec = stop - origin
         self._r = r
         super().__init__(origin, trans_in)
+        self.start = self.connections[0]
+        self.end = self.connections[1]
 
     def init_regions(self):
         ext_start = self._r
@@ -277,6 +279,12 @@ class Kolbaska(ElementBase):
         self.metal_region.insert(kolb)
         self.connections.extend([DPoint(0, 0), DPoint(0, 0) + self._vec])
         self.angle_connections.extend([0, 0])
+
+    def _refresh_named_connections(self):
+        self.start = self.connections[0]
+        self.end = self.connections[1]
+
+
 
 
 class Circle_arc(ElementBase):

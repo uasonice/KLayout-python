@@ -415,10 +415,11 @@ class Bridge1(ElementBase):
     transition_len = 12e3
     gnd2gnd_dy = 70e3
 
-    def __init__(self, center, gnd_touch_dx=20e3, trans_in=None):
+    def __init__(self, center, gnd_touch_dx=20e3, gnd2gnd_dy=70e3, trans_in=None):
         self.center = center
         self.gnd_touch_dx = gnd_touch_dx
         self.angle = 0
+        self.gnd2gnd_dy=gnd2gnd_dy
         super().__init__(center, trans_in)
 
         self._geometry_parameters = OrderedDict(

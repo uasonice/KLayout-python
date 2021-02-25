@@ -1,3 +1,19 @@
+"""
+This file implements structures that are used
+internally by `classLib` library.
+DO NOT SUPPORT BACKWARD COMPATIBILITY
+FOR API-USER SCRIPTS THAT UTILIZE THIS CODE DIRECTLY.
+
+It also contains some config settings that are currently
+such as "ARC_PTS_N" that was designed to fix the default
+number of points in circle's arc-shaped polygon edges.
+
+Do not use any of this code in your drawing script.
+Changes to this file can be made at any moment
+and they will not account for backward compatibility
+of code that uses this file conent.
+"""
+
 import pya
 from math import sqrt, cos, sin, atan2, pi, copysign
 from pya import Point,DPoint,DSimplePolygon,SimplePolygon, DPolygon, Polygon,  Region

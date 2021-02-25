@@ -10,6 +10,7 @@ from pya import Trans, DTrans, CplxTrans, DCplxTrans, ICplxTrans, Path
 
 from importlib import reload
 import classLib
+
 reload(classLib)
 
 from classLib.baseClasses import ElementBase, ComplexBase
@@ -17,9 +18,10 @@ from classLib.coplanars import CPWParameters, CPW_RL_Path, CPW2CPW, Bridge1
 from classLib.shapes import XmonCross, Circle, Rectangle
 from classLib.resonators import EMResonatorTL3QbitWormRLTailXmonFork
 from classLib.josJ import AsymSquidParams, AsymSquid
-from classLib.chipTemplates import CHIP_10x10_12pads
+from classLib.chipTemplates import CHIP_10x10_12pads, FABRICATION
 from classLib.chipDesign import ChipDesign
-from classLib.marks import Mark2
+from classLib.marks import MarkBolgar
+from classLib.shapes import Ring
 
 # imports for docstrings generation
 from classLib.coplanars import CPW, CPW_arc
@@ -30,6 +32,9 @@ from classLib.contactPads import ContactPad
 from classLib.helpers import fill_holes, split_polygons
 
 import copy
+
+
+FABRICATION.OVERETCHING = 0.8e3  # nm
 
 
 class FluxLineEnd(ElementBase):
@@ -46,10 +51,10 @@ class FluxLineEnd(ElementBase):
     def init_regions(self):
         # flux CPW width and gap
         f_cpw = self._fc_cpw_params
-        p1 = DPoint(-f_cpw.b / 2, -f_cpw.width/2)
+        p1 = DPoint(-f_cpw.b / 2, -f_cpw.width / 2)
         p2 = p1 + DPoint(0, f_cpw.width)
         p3 = p2 + DPoint(f_cpw.gap, 0)
-        p4 = p3 + DPoint(0, -3/2*f_cpw.width)
+        p4 = p3 + DPoint(0, -3 / 2 * f_cpw.width)
         metal_points = [p1, p2, p3, p4]
         self.metal_region.insert(Region(DSimplePolygon(metal_points)))
 
@@ -130,12 +135,6 @@ class MDriveLineEnd(ComplexBase):
         self.connections = [self.transition_cpw2cpw.start, self.z1_cpw.end]
 
 
-class FABRICATION:
-    # metal polygons are overetched on this value of nm
-    # correponding adjustments have to be made to the design.
-    OVERETCHING = 0.8e3
-
-
 class TestStructurePads(ComplexBase):
     def __init__(self, center, trans_in=None):
         self.center = center
@@ -213,7 +212,7 @@ class Design5Q(ChipDesign):
         self.z_md_fl: CPWParameters = CPWParameters(11e3, 5.7e3)  # Z = 50.09 E_eff = 6.235 (E = 11.45)
         self.ro_Z: CPWParameters = self.chip.chip_Z
         self.contact_pads: list[ContactPad] = self.chip.get_contact_pads(
-            [self.z_md_fl]*10 + [self.ro_Z]*2, FABRICATION.OVERETCHING
+            [self.z_md_fl] * 10 + [self.ro_Z] * 2, FABRICATION.OVERETCHING
         )
 
         # readout line parameters
@@ -297,7 +296,7 @@ class Design5Q(ChipDesign):
         self.cpwrl_fl5_end: FluxLineEnd = None
 
         # marks
-        self.marks: List[Mark2] = []
+        self.marks: List[MarkBolgar] = []
         ### ADDITIONAL VARIABLES SECTION END ###
 
     def draw(self, design_params=None):
@@ -521,7 +520,8 @@ class Design5Q(ChipDesign):
             # changes start #
             xmon_center += DPoint(
                 0,
-                -(self.cross_len_y + self.cross_width_x / 2 + min(self.cross_gnd_gap_y, self.xmon_fork_gnd_gap)) + FABRICATION.OVERETCHING
+                -(self.cross_len_y + self.cross_width_x / 2 + min(self.cross_gnd_gap_y,
+                                                                  self.xmon_fork_gnd_gap)) + FABRICATION.OVERETCHING
             )
             self.xmons.append(
                 XmonCross(xmon_center, self.cross_len_x,
@@ -550,6 +550,7 @@ class Design5Q(ChipDesign):
         -------
 
         """
+        # TODO: MDriveLineEnd - working bad with overetching
         contact_pads = self.contact_pads
         ctr_line_turn_radius = 100e3
 
@@ -567,8 +568,8 @@ class Design5Q(ChipDesign):
         tmp_reg = self.region_ph
 
         z_md_fl_corrected = CPWParameters(
-            self.z_md_fl.width + 2*FABRICATION.OVERETCHING,
-            self.z_md_fl.gap - 2*FABRICATION.OVERETCHING
+            self.z_md_fl.width + 2 * FABRICATION.OVERETCHING,
+            self.z_md_fl.gap - 2 * FABRICATION.OVERETCHING
         )
 
         shift_fl_y = self.shift_fl_y
@@ -578,10 +579,10 @@ class Design5Q(ChipDesign):
         flux_end_width = self.cross_width_x + 2 * self.cross_gnd_gap_x - 2 * FABRICATION.OVERETCHING
 
         md_transition = 25e3
-        md_z1_params = CPWParameters(2e3 + 2 * FABRICATION.OVERETCHING,
-                                     4e3 - 2 * FABRICATION.OVERETCHING)  # Z = 61.14 Ohm, E_eff = 6.25229 (E_0 = 11.45), width = 2, gap = 2
-        md_z1_length = 385e3 - (155e3 - 60e3)*0.9  # Xmon y-part change
-        shift_md_x_side = md_z1_length + md_transition + md_z1_params.b / 2 + cross_len_x + cross_width_x / 2 + cross_gnd_gap_x
+        md_z1_params = z_md_fl_corrected
+        md234_z1_length = 245e3
+        md15_z1_length = md234_z1_length - 30e3
+        shift_md_x_side = md234_z1_length + md_transition + md_z1_params.b / 2 + cross_len_x + cross_width_x / 2 + cross_gnd_gap_x
 
         # place caplanar line 1md
         self.cpwrl_md1 = CPW_RL_Path(
@@ -607,7 +608,7 @@ class Design5Q(ChipDesign):
         self.cpwrl_md1.place(tmp_reg)
 
         self.cpwrl_md1_end = MDriveLineEnd(list(self.cpwrl_md1.primitives.values())[-1], md_z1_params, md_transition,
-                                           md_z1_length)
+                                           md15_z1_length)
         self.cpwrl_md1_end.place(tmp_reg)
 
         # place caplanar line 1 fl
@@ -654,7 +655,7 @@ class Design5Q(ChipDesign):
 
         self.cpwrl_md2_end = MDriveLineEnd(
             list(self.cpwrl_md2.primitives.values())[-1],
-            md_z1_params, md_transition, md_z1_length
+            md_z1_params, md_transition, md234_z1_length
         )
         self.cpwrl_md2_end.place(tmp_reg)
 
@@ -715,7 +716,7 @@ class Design5Q(ChipDesign):
         self.cpwrl_md3_2.place(tmp_reg)
 
         self.cpwrl_md3_end = MDriveLineEnd(
-            list(self.cpwrl_md3_2.primitives.values())[-1], md_z1_params, md_transition, md_z1_length
+            list(self.cpwrl_md3_2.primitives.values())[-1], md_z1_params, md_transition, md234_z1_length
         )
         self.cpwrl_md3_end.place(tmp_reg)
 
@@ -751,10 +752,9 @@ class Design5Q(ChipDesign):
         )
         self.cpwrl_md4.place(tmp_reg)
 
-
         self.cpwrl_md4_end = MDriveLineEnd(
             list(self.cpwrl_md4.primitives.values())[-1],
-            md_z1_params, md_transition, md_z1_length
+            md_z1_params, md_transition, md234_z1_length
         )
         self.cpwrl_md4_end.place(tmp_reg)
 
@@ -782,28 +782,28 @@ class Design5Q(ChipDesign):
         md5_dy = 400e3
         md5_dx = 400e3
         md5_angle = atan2(
-                    2 * (contact_pads[9].end.x - xmon_center.x - shift_md_x_side) / 3,
-                    (contact_pads[9].end.y - xmon_center.y) / 3
+            2 * (contact_pads[9].end.x - xmon_center.x - shift_md_x_side) / 3,
+            (contact_pads[9].end.y - xmon_center.y) / 3
         )
 
         self.cpwrl_md5 = CPW_RL_Path(
             contact_pads[9].end, shape="LRLRLRLRL", cpw_parameters=z_md_fl_corrected,
             turn_radiuses=[ctr_line_turn_radius] * 4,
             segment_lengths=[
-                md5_dy, md5_dx/sin(pi/4),
-                md5_l1 - md5_dy - md5_dx/tan(pi/4) - md5_dx/tan(md5_angle),
-                md5_dx/sin(md5_angle) + (
-                        (
-                                (contact_pads[9].end.y - xmon_center.y) / 3
-                        ) ** 2 +
-                        (
-                                2 * (contact_pads[9].end.x - xmon_center.x - shift_md_x_side) / 3
-                        ) ** 2
-                ) ** (0.5),
-                (contact_pads[9].end.x - xmon_center.x - shift_md_x_side) / 3 - md0_md5_gnd
+                md5_dy, md5_dx / sin(pi / 4),
+                        md5_l1 - md5_dy - md5_dx / tan(pi / 4) - md5_dx / tan(md5_angle),
+                        md5_dx / sin(md5_angle) + (
+                                (
+                                        (contact_pads[9].end.y - xmon_center.y) / 3
+                                ) ** 2 +
+                                (
+                                        2 * (contact_pads[9].end.x - xmon_center.x - shift_md_x_side) / 3
+                                ) ** 2
+                        ) ** (0.5),
+                        (contact_pads[9].end.x - xmon_center.x - shift_md_x_side) / 3 - md0_md5_gnd
             ],
             turn_angles=[
-                pi/4, -pi/4,
+                pi / 4, -pi / 4,
                 -md5_angle,
                 -(pi / 2 - md5_angle)
             ],
@@ -835,7 +835,7 @@ class Design5Q(ChipDesign):
 
         self.cpwrl_md5_end = MDriveLineEnd(
             list(self.cpwrl_md5.primitives.values())[-1],
-            md_z1_params, md_transition, md_z1_length
+            md_z1_params, md_transition, md15_z1_length
         )
         self.cpwrl_md5_end.place(tmp_reg)
 
@@ -876,7 +876,8 @@ class Design5Q(ChipDesign):
         )
         self.cpwrl_fl5_2.place(tmp_reg)
 
-        self.cpwrl_fl5_end = FluxLineEnd(self.cpwrl_fl5_2.end, z_md_fl_corrected, width=flux_end_width, trans_in=Trans.R0)
+        self.cpwrl_fl5_end = FluxLineEnd(self.cpwrl_fl5_2.end, z_md_fl_corrected, width=flux_end_width,
+                                         trans_in=Trans.R0)
         self.cpwrl_fl5_end.place(tmp_reg)
 
     def draw_josephson_loops(self):
@@ -1051,11 +1052,7 @@ class Design5Q(ChipDesign):
         ]
         for mark_center in marks_centers:
             self.marks.append(
-                Mark2(
-                    mark_center,
-                    cross_thickness=2e3 + FABRICATION.OVERETCHING,
-                    cross_size=6e3 + 2 * FABRICATION.OVERETCHING
-                )
+                MarkBolgar(mark_center, overetching=FABRICATION.OVERETCHING)
             )
             self.marks[-1].place(self.region_ph)
 

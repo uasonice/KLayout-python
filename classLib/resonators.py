@@ -864,12 +864,12 @@ class EMResonatorTL3QbitWormRLTailXmonFork(EMResonatorTL3QbitWormRLTail):
     def init_primitives(self):
         super().init_primitives()
 
-        """ add fork to the end of the resonator """
+        """ add fork to the end of the base class resonator """
         # adding fork horizontal part
         self.draw_fork_along_x()
         self.draw_fork_along_y()
 
-        # remove open end from the resonator
+        # remove open end from the base class resonator
         del self.primitives["cpw_end_open_gap"]
         del self.cpw_end_open_gap
 

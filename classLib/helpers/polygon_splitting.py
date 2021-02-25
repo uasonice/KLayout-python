@@ -1,3 +1,20 @@
+"""
+    This helper splits polygons with many vertices to set of polygons with
+    lesser amount of vertices per polygon.
+    We encountered, that some litography equipment is not capable to
+    handle for e.g. more than 200 points per polygon.
+
+    If you need to use `split_polygons(...)` in your job, just write:
+    ```python
+    from classLib.helpers import split_polygons
+    and call the function with desired arguments.
+
+    Executing this script itself will present an example:
+    Circle with a lot of vertices that is devided such that it has
+    no more than 200 points per polygon.
+    ```
+"""
+
 import pya
 from pya import Point, DPoint, Vector, DVector, DSimplePolygon, SimplePolygon, DPolygon, Polygon, Region, Box, DBox
 from pya import Trans, DTrans, CplxTrans, DCplxTrans, ICplxTrans

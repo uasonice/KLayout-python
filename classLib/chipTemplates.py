@@ -14,6 +14,28 @@ from typing import Union, List
 
 import copy
 
+
+class FABRICATION:
+    """
+        Metal polygons edges are overetched by this value expressen in nm.
+        Overetching results in broadening of gaps between polygons.
+        In other words, every polygon edge is shifted along direction
+    perpendicular to the edge itself from empty space
+    to polygon's body by FABRICATION.OVERETCHING distance in nm.
+        To account for overetching polygons has to be constructed
+    in a way that results in software design with polygons "widened" by
+    FABRICATIO.OVERETCHING value. For e.g. witdth of the coplanar
+    waveguide central conductor has to be "widened" by 2*FABRICATION.OVERETCHING
+    while preseving symmetry along center of the wavegiude.
+
+        Correponding adjustments have to be made to every design element
+    that undergoues overetching during fabrication.
+    In addition, different areas of the sample can undergo different
+    overetching, depending on the design and fabrication process.
+    """
+    OVERETCHING = 0.0e3
+
+
 class Chip5x10_with_contactPads(ComplexBase):
     '''
     This object is implementing chip surface with 
@@ -93,8 +115,8 @@ class CHIP_10x10_12pads:
     pcb_feedline_d = 2500e3  # 2.5 mm
     pcb_Z = CPWParameters(pcb_width, pcb_gap)
 
-    chip_cpw_width = 24.1e3
-    chip_cpw_gap = 12.95e3
+    chip_cpw_width = 24e3
+    chip_cpw_gap = 13e3
     chip_Z = CPWParameters(chip_cpw_width, chip_cpw_gap)
 
     @staticmethod

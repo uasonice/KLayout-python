@@ -4,8 +4,8 @@ from pya import Point, DPoint, DSimplePolygon, SimplePolygon, DPolygon, Polygon,
 from pya import Trans, DTrans, CplxTrans, DCplxTrans, ICplxTrans
 
 from classLib.baseClasses import ComplexBase
-from classLib.shapes import *
-from classLib.coplanars import CPWParameters, CPW_arc
+from classLib.shapes import Ring, Circle, Rectangle, Cross, IsoTrapezoid, Cross2
+from classLib.coplanars import CPW, CPWParameters, CPW_arc
 
 
 class Mark1(ComplexBase):
@@ -87,3 +87,71 @@ class Mark2(ComplexBase):
             self.trap_h, self.trap_b, self.trap_t, trans_in=Trans.R270
         )
         self.primitives["cross"] = Cross2(origin, self.cross_thickness, self.cross_size)
+
+
+class MarkBolgar(ComplexBase):
+    def __init__(self, origin, lines_thickness=3e3, ring1_thickness=15e3, ring2_thickness=15e3,
+                 overetching=0.0, trans_in=None):
+        self.ring1_outer_r = 200e3 - overetching
+        self.ring1_thickness = ring1_thickness + 2*overetching
+        self.ring2_outer_r = 100e3 - overetching
+        self.ring2_thickness = ring2_thickness + 2*overetching
+        self.aim_lines_width = lines_thickness + 2*overetching
+        self.overetching = overetching
+        self.center = None
+        super().__init__(origin, trans_in)
+
+    def init_primitives(self):
+        center = DPoint(0, 0)
+
+        self.empty_circle = Circle(center, self.ring1_outer_r + self.ring1_thickness, inverse=True)
+        self.primitives["empty_circle"] = self.empty_circle
+
+        # outer ring
+        self.ring1 = Ring(center, self.ring1_outer_r, self.ring1_thickness)
+        self.primitives["ring1"] = self.ring1
+
+        # inner ring
+        self.ring2 = Ring(center, self.ring2_outer_r, self.ring2_thickness)
+        self.primitives["ring2"] = self.ring2
+
+        ## four aim lines ##
+        center_shift = self.aim_lines_width/3
+        line_length = self.ring1_outer_r - self.ring1_thickness/2 - center_shift
+        # left horizontal line
+        p1 = center + DPoint(-center_shift, 0)
+        p2 = p1 + DPoint(-line_length, 0)
+        self.left_aim_line = CPW(self.aim_lines_width, 0, p1, p2)
+        self.primitives["left_aim_line"] = self.left_aim_line
+
+        # bottom vertical line
+        p1 = center + DPoint(0, -center_shift)
+        p2 = p1 + DPoint(0, -line_length)
+        self.bottom_aim_line = CPW(self.aim_lines_width, 0, p1, p2)
+        self.primitives["bottom_aim_line"] = self.bottom_aim_line
+
+        # right horizontal line
+        p1 = center + DPoint(center_shift, 0)
+        p2 = p1 + DPoint(line_length, 0)
+        self.right_aim_line = CPW(self.aim_lines_width, 0, p1, p2)
+        self.primitives["right_aim_line"] = self.right_aim_line
+
+        # top vertical line
+        p1 = center + DPoint(0, center_shift)
+        p2 = p1 + DPoint(0, line_length)
+        self.top_aim_line = CPW(self.aim_lines_width, 0, p1, p2)
+        self.primitives["top_aim_line"] = self.top_aim_line
+
+        # center romb for better aiming
+        self.center_romb = Rectangle(
+            center,
+            self.aim_lines_width, self.aim_lines_width,
+            trans_in=DCplxTrans(1, 45, False, -self.aim_lines_width/2, -self.aim_lines_width/2),
+            inverse=True
+        )
+        self.primitives["center_romb"] = self.center_romb
+
+        self.connections = [center]
+
+    def _refresh_named_connections(self):
+        self.center = self.connections[0]
