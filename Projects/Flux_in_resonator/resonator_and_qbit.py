@@ -11,6 +11,8 @@ from pya import Trans, DTrans, CplxTrans, DCplxTrans, ICplxTrans
 
 import classLib
 from classLib import *
+from classLib import revUtility
+
 reload(classLib)
 from classLib import *
 
@@ -31,24 +33,9 @@ class CHIP:
     connections = [box.p1 + DPoint( L1 + b/2,0 ), box.p1 + DPoint( dx - (L1+b/2),0 ), box.p2 - DPoint( L1 + b/2,0 ),  box.p1 + DPoint( L1 + b/2, dy )]
     
 
-
-
 if ( __name__ ==  "__main__" ):
-    # getting main references of the application
-    app = pya.Application.instance()
-    mw = app.main_window()
-    lv = mw.current_view()
-    cv = None
-    
-    #this insures that lv and cv are valid objects
-    if( lv == None ):
-        cv = mw.create_layout(1)
-        lv = mw.current_view()
-    else:
-        cv = lv.active_cellview()
-
     # find or create the desired by programmer cell and layer
-    layout = cv.layout()
+    layout, lv = revUtility.klayout_init_layout()
     layout.dbu = 0.001
     if( layout.has_cell( "testScript") ):
         pass
@@ -63,9 +50,10 @@ if ( __name__ ==  "__main__" ):
     # clear this cell and layer
     cell.clear()
 
-    # setting layout view  
-    lv.select_cell(cell.cell_index(), 0)
-    lv.add_missing_layers()
+    # setting layout view
+    if lv:
+        lv.select_cell(cell.cell_index(), 0)
+        lv.add_missing_layers()
     
 
     
@@ -162,4 +150,7 @@ if ( __name__ ==  "__main__" ):
 
     print(empty.start, empty.end)
     ## DRAWING SECTION END ##
-    lv.zoom_fit()
+    if lv:
+        lv.zoom_fit()
+    else:
+        layout.write("t.gds")

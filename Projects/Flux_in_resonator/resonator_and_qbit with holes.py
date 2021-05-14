@@ -6,6 +6,8 @@ from math import cos, sin, atan2, pi
 from pya import Point,DPoint,DSimplePolygon,SimplePolygon, DPolygon, Polygon,  Region
 from pya import Trans, DTrans, CplxTrans, DCplxTrans, ICplxTrans
 from classLib import *
+from classLib import revUtility
+
 
 def fill_holes( poly, dx=10e3, dy=8e3, width=5e3, height=5e3, d=0 ):
     bbox = poly.bbox()
@@ -44,21 +46,8 @@ class CHIP:
     
 
 if ( __name__ ==  "__main__" ):
-    # getting main references of the application
-    app = pya.Application.instance()
-    mw = app.main_window()
-    lv = mw.current_view()
-    cv = None
-    
-    #this insures that lv and cv are valid objects
-    if( lv == None ):
-        cv = mw.create_layout(1)
-        lv = mw.current_view()
-    else:
-        cv = lv.active_cellview()
-
     # find or create the desired by programmer cell and layer
-    layout = cv.layout()
+    layout, lv = revUtility.klayout_init_layout()
     layout.dbu = 0.001
     if( layout.has_cell( "testScript") ):
         pass
@@ -74,9 +63,10 @@ if ( __name__ ==  "__main__" ):
     cell.clear()
 
     # setting layout view  
-    lv.select_cell(cell.cell_index(), 0)
-    lv.add_missing_layers()
-    
+    if lv:
+        lv.select_cell(cell.cell_index(), 0)
+        lv.add_missing_layers()
+
 
     
     ## DRAWING SECTION START ##
@@ -182,20 +172,38 @@ if ( __name__ ==  "__main__" ):
         Z_res = CPW( width_res, gap_res, origin, origin )
         worm = EMResonator_TL2Qbit_worm( Z_res, point, L_coupling, L1_list[i], r, L2, N, gnd_width )
         worm.place( cell, layer_photo )
-        resonators.append( worm )    
-        
+        resonators.append( worm )
+
+        # added by revival start / 2021/05/14
+        if len(a_list) > N_bottom + i:
+            qbit_params = [a_list[N_bottom + i], a_list[N_bottom + i],
+                           jos1_b, jos1_a, f1, d1,
+                           jos2_b, jos2_a, f2, d2,
+                           w, B1_width, B1_height,
+                           B2_width, B5_width,
+                           B6_width, B6_height,
+                           B7_width, B7_height,
+                           dCap, gap]
+        qbit_start = worm.end + DPoint(B1_width / 2, 0)
+        qbit = QBit_Flux_2(qbit_start, qbit_params, DCplxTrans(1, 180, False, 0, 0))
+        qbit.place(cell, layer_el)
+        qbits.append(qbit)
+
+        qbit_bbox = pya.DBox().from_ibox(qbit.metal_region.bbox())
+        # added by revival end   / 2021/05/14
         qbit_bbox = pya.Box().from_dbox( qbit_bbox )
         h = qbit_bbox.height()
-        reg = worm.gnd_reg + ( Region( pya.Box( qbit_bbox.p1 - Point(2*h,2*h), qbit_bbox.p2 + Point( 2*h,dCap ) ) ) - Region( qbit.metal_region.bbox() ))
+        # reg = worm.gnd_reg + ( Region( pya.Box( qbit_bbox.p1 - Point(2*h,2*h), qbit_bbox.p2 + Point( 2*h,dCap ) ) ) - Region( qbit.metal_region.bbox() ))
+        reg = ( Region( pya.Box( qbit_bbox.p1 - Point(2*h,2*h), qbit_bbox.p2 + Point( 2*h,dCap ) ) ) - Region( qbit.metal_region.bbox() ))
         new_reg = Region()
-      #  reg.merged_semantics=False
+        #reg.merged_semantics=False
         r_cell = Region( cell.begin_shapes_rec( layer_photo ) )    
         reg = reg & r_cell
         for poly in reg:
             poly_temp = fill_holes( poly )
             new_reg.insert( poly_temp )
             
-    #    r_cell.merged_semantics=False   
+        #r_cell.merged_semantics=False
         r_cell = r_cell - reg
         r_cell = r_cell + new_reg
         temp_i = cell.layout().layer( pya.LayerInfo(PROGRAM.LAYER1_NUM,0) ) 
@@ -220,7 +228,8 @@ if ( __name__ ==  "__main__" ):
         width_res = 4.8e3
         gap_res = 2.6e3
         Z_res = CPW( width_res, gap_res, origin, origin )
-        worm = EMResonator_TL2Qbit_worm( Z_res, point, L_coupling, L1_list[i + N_bottom], r, L2, N, gnd_width, Trans( Trans.M0 ) )
+        # worm = EMResonator_TL2Qbit_worm( Z_res, point, L_coupling, L1_list[i + N_bottom], r, L2, N, gnd_width, Trans( Trans.M0 ) )
+        worm = EMResonator_TL2Qbit_worm( Z_res, point, L_coupling, L1_list[i + N_bottom], r, L2, N, Trans( Trans.M0 ) )
         worm.place( cell, layer_photo )
         resonators.append( worm )    
         
@@ -244,16 +253,17 @@ if ( __name__ ==  "__main__" ):
         
         qbit_bbox = pya.Box().from_dbox( qbit_bbox )
         h = qbit_bbox.height()
-        reg = worm.gnd_reg + ( Region( pya.Box( qbit_bbox.p1 - Point(2*h,dCap), qbit_bbox.p2 + Point( 2*h,2*h ) ) ) - Region( qbit.metal_region.bbox() ))
+        # reg = worm.gnd_reg + ( Region( pya.Box( qbit_bbox.p1 - Point(2*h,dCap), qbit_bbox.p2 + Point( 2*h,2*h ) ) ) - Region( qbit.metal_region.bbox() ))
+        reg = ( Region( pya.Box( qbit_bbox.p1 - Point(2*h,dCap), qbit_bbox.p2 + Point( 2*h,2*h ) ) ) - Region( qbit.metal_region.bbox() ))
         new_reg = Region()
-      #  reg.merged_semantics=False
+        #reg.merged_semantics=False
         r_cell = Region( cell.begin_shapes_rec( layer_photo ) )    
         reg = reg & r_cell
         for poly in reg:
             poly_temp = fill_holes( poly )
             new_reg.insert( poly_temp )
             
-    #    r_cell.merged_semantics=False   
+        #r_cell.merged_semantics=False
         r_cell = r_cell - reg
         r_cell = r_cell + new_reg
         temp_i = cell.layout().layer( pya.LayerInfo(PROGRAM.LAYER1_NUM,0) ) 
@@ -262,4 +272,7 @@ if ( __name__ ==  "__main__" ):
         cell.layout().move_layer( temp_i, layer_photo )
         cell.layout().delete_layer( temp_i )
     ## DRAWING SECTION END ##
-    lv.zoom_fit()
+    if lv:
+        lv.zoom_fit()
+    else:
+        layout.write("t.gds")
