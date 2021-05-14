@@ -13,10 +13,10 @@ from classLib.coplanars import *
 
 
 class CHIP:
-    dx = 10e6
-    dy = 10e6
-    
-    
+	dx = 10e6
+	dy = 10e6
+
+
 app = pya.Application.instance()
 mw = app.main_window()
 lv = mw.current_view()
@@ -24,19 +24,19 @@ cv = None
 
 #this insures that lv and cv are valid objects
 if( lv == None ):
-    cv = mw.create_layout(1)
-    lv = mw.current_view()
+	cv = mw.create_layout(1)
+	lv = mw.current_view()
 else:
-    cv = lv.active_cellview()
-    
+	cv = lv.active_cellview()
+
 layout = cv.layout()
 layout.dbu = 0.001
 if( layout.has_cell( "testScript") ):
-    pass
+	pass
 else:
-    cell = layout.create_cell( "testScript" )
-    
-    
+	cell = layout.create_cell( "testScript" )
+
+
 info = pya.LayerInfo(1,0)
 info2 = pya.LayerInfo(2,0)
 layer_photo = layout.layer( info )
@@ -82,8 +82,8 @@ cpw_params = CPWParameters(20e3, 10e3)
 
 segment_lenghts = [2.5e6, cp7.end.x-cp8.end.x, 2.5e6]
 
-feedline = CPW_RL_Path(cp8.end, "LRLRL", cpw_params, 100e3, 
-      segment_lenghts, [-pi/2,-pi/2] ,trans_in = DTrans.R90)
+feedline = CPW_RL_Path(cp8.end, "LRLRL", cpw_params, 100e3,
+					   segment_lenghts, [-pi/2,-pi/2] ,trans_in = DTrans.R90)
 feedline.place(cell, layer_photo)
 
 #Second feedline
